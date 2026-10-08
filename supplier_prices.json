@@ -1,0 +1,62 @@
+{
+  "products": [
+    {
+      "supplier": "Gelmar",
+      "sku": "200",
+      "name": "Eco soft-close 110\u00b0 full overlay with 4-hole plate",
+      "source_url": "https://www.gelmar.co.za/hinge-eco-soft-close-full-overlay-110-0mm-4-hole-plate.html",
+      "vat_basis": "Not verified",
+      "price_basis": "each; plate described in product listing",
+      "price_zar": 6.3,
+      "last_verified_utc": "2026-10-08T18:19:17.377683+00:00",
+      "check_status": "verified",
+      "last_attempt_utc": "2026-10-08T18:19:17.377683+00:00",
+      "availability": "https://schema.org/InStock",
+      "last_error": null
+    },
+    {
+      "supplier": "Gelmar",
+      "sku": "207",
+      "name": "Contract soft-close 110\u00b0 full overlay with 4-hole plate",
+      "source_url": "https://www.gelmar.co.za/hinge-contract-soft-close-full-overlay-110-0-mm-4-hole-plate.html",
+      "vat_basis": "Not verified",
+      "price_basis": "each; plate described in product listing",
+      "price_zar": 11.0,
+      "last_verified_utc": "2026-10-08T18:19:17.377683+00:00",
+      "check_status": "verified",
+      "last_attempt_utc": "2026-10-08T18:19:17.377683+00:00",
+      "availability": "https://schema.org/InStock",
+      "last_error": null
+    },
+    {
+      "supplier": "Gelmar",
+      "sku": "201",
+      "name": "Star soft-close 110\u00b0 full overlay with cam-adjustable plate",
+      "source_url": "https://www.gelmar.co.za/hinge-star-soft-close-full-overlay-110-0mm-with-cam-adjustable-plate-screw-on.html",
+      "vat_basis": "Not verified",
+      "price_basis": "each; plate described in product listing",
+      "price_zar": 13.0,
+      "last_verified_utc": "2026-10-08T18:18:31.851707+00:00",
+      "check_status": "failed",
+      "last_attempt_utc": "2026-10-08T18:19:17.377683+00:00",
+      "availability": "https://schema.org/InStock",
+      "last_error": "HTTPError: price check failed; retained previous observation"
+    },
+    {
+      "supplier": "Roco",
+      "sku": null,
+      "name": "FGV Integra soft closing 0 mm 110\u00b0",
+      "expected_name": "HINGE CLICK INTEGRA SOFT CLOSING 0MM 110' FGV",
+      "source_url": "https://www.roco.co.za/product-page/hinge-click-integra-soft-closing-0mm-110-fgv",
+      "vat_basis": "Not verified",
+      "price_basis": "FROM price; select variant and confirm mounting plate separately",
+      "price_zar": 38.0,
+      "last_verified_utc": "2026-10-08T18:19:17.377683+00:00",
+      "check_status": "verified",
+      "last_attempt_utc": "2026-10-08T18:19:17.377683+00:00",
+      "availability": "https://schema.org/InStock",
+      "last_error": null
+    }
+  ],
+  "last_run_utc": "2026-10-08T18:19:17.377683+00:00"
+}
