@@ -1,5 +1,31 @@
 # Kitchen Workshop
 
+## Shared default prices for all customer jobs
+
+Open **Shared default prices — all customers** to edit existing business defaults,
+export a backup or restore a defaults JSON file. To create entries, enter prices in
+an ordinary quote and click **Save these prices as shared defaults**. Material rates
+are stored excluding VAT in R/m², separately for carcass/door material and board
+thickness; back-board rate is separate. Hinge and mounting plate prices are grouped
+by brand. Labour, hardware/edging allowance, transport, waste, markup and tax defaults
+are also saved, with manual accessory unit prices. Customer details, cabinet counts
+and accessory quantities are never made global. No supplier prices are invented.
+
+New jobs use a frozen copy of current defaults and prices remain editable for that
+job. Changing material/thickness or hinge brand loads that profile's default input.
+Saved jobs keep their original price inputs and default snapshot, including after
+business defaults change. **Use latest shared defaults for this job** explicitly
+resets its price selections, allowances and manual accessory prices; quantities for
+manual accessories reset to zero. It does not rewrite previous quotation revisions.
+Saving edited defaults does not silently reprice open jobs in other sessions.
+
+Defaults are shared across customers and app sessions through `data/default_prices.json`
+with a write lock and atomic replacement. They are separate from customer jobs and
+supplier uploads. On this single-instance prototype, app users can edit shared
+prices; separate staff roles are not implemented. Free-hosted local storage can reset,
+so download **shared default prices backup** and keep it with the job archives.
+Durable storage across host resets requires paid persistent storage or a database.
+
 ## Interactive 2D designer milestone
 
 The **Full design** view now includes a locally served Streamlit v1 component

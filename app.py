@@ -64,6 +64,8 @@ with brand_title:
     st.caption('Design • Renovate • Build | Kitchen design, costing and cutting lists')
 render_saved_jobs()
 render_supplier_uploads()
+from default_prices_ui import render_shared_defaults,save_current_defaults
+render_shared_defaults()
 render_plan_import()
 room_layout=render_room_layout()
 if room_layout is None:
@@ -120,6 +122,8 @@ with left:
     door_edges = st.multiselect('Door edges to finish', ['Top', 'Bottom', 'Left', 'Right'], default=[] if door_material == 'Solid wood' else ['Top', 'Bottom', 'Left', 'Right'], key='job_door_edges')
     st.caption('Door dimensions above are finished sizes including edging. Cut dimensions deduct edging on selected edges only.')
 with right:
+    from default_prices import seed_defaults
+    seed_defaults(st.session_state,st.session_state['_job_default_prices'])
     st.subheader('Your prices and allowances')
     price = supplier_price('Carcass material', 'carcass_supplier')
     back_price = supplier_price('3 mm PG Bison Masonite', 'back_supplier')
@@ -150,6 +154,9 @@ if invalid_accessories or (hinge_record is not None and hinge_price_input is Non
 
 st.subheader('Additional manually priced Blum accessories for this job')
 st.caption('Enter complete-set prices from your supplier. These are optional costing lines, not a verified catalogue or installation specification. Quantities apply to the whole job.')
+if '_job_manual_accessories' not in st.session_state:
+    items=[{'Accessory':k[10:],'Quantity':0,'Unit price (R)':v} for k,v in st.session_state['_job_default_prices']['prices'].items() if k.startswith('accessory|')]
+    if items:st.session_state['_job_manual_accessories']=items
 accessories = st.data_editor(pd.DataFrame(st.session_state.get('_job_manual_accessories', [
     {'Accessory': 'AVENTOS lift system (complete set)', 'Quantity': 0, 'Unit price (R)': 0.0},
     {'Accessory': 'LEGRABOX drawer system (complete set)', 'Quantity': 0, 'Unit price (R)': 0.0},
@@ -207,6 +214,7 @@ door_cost = door_cut.area_m2 * (1+waste/100) * door_price
 quote = estimate(cut_parts, price, waste, hardware + door_cost + hinge_cost + accessory_cost/units, labour, transport/units, markup, tax, back.area_m2, back_price)
 quote['material'] += door_cost
 quote['area'] += door_cut.area_m2
+save_current_defaults(price,back_price,door_price,hinge_price_input,plate_price_input,accessories.to_dict(orient='records'))
 design_views=render_views(width,height,depth,thickness,shelves,clearance,door_thickness,hinges_per_door,room_layout)
 st.subheader('Cutting list')
 st.write(f'Internal width: **{width-2*thickness:g} mm** · Clear height below top rails: **{height-2*thickness:g} mm**')
@@ -290,6 +298,7 @@ snapshot = dict(
     plan_import=st.session_state.get('_job_plan_import'),
     plan_pending_units=st.session_state.get('_job_import_units',[]),
     layout=room_layout,
+    default_prices=st.session_state.get('_job_default_prices'),
     design_lock=st.session_state.get('_design_lock'),
     design_views=design_views,
     cutting_list=frame.to_dict(orient='records'),
