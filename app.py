@@ -147,6 +147,8 @@ with right:
     if material == 'Solid wood':
         st.caption('Solid wood currently uses a finished-panel price per m² at the chosen thickness. Rough timber volume, machining loss, and board selection need a later costing model.')
 
+design_views=render_views(width,height,depth,thickness,shelves,clearance,door_thickness,hinges_per_door,room_layout)
+
 uploaded_items, invalid_accessories = supplier_accessories()
 if invalid_accessories or (hinge_record is not None and hinge_price_input is None) or (plate_record is not None and plate_price_input is None):
     st.info('Complete the selected supplier VAT information before using these hardware prices.')
@@ -215,7 +217,6 @@ quote = estimate(cut_parts, price, waste, hardware + door_cost + hinge_cost + ac
 quote['material'] += door_cost
 quote['area'] += door_cut.area_m2
 save_current_defaults(price,back_price,door_price,hinge_price_input,plate_price_input,accessories.to_dict(orient='records'))
-design_views=render_views(width,height,depth,thickness,shelves,clearance,door_thickness,hinges_per_door,room_layout)
 st.subheader('Cutting list')
 st.write(f'Internal width: **{width-2*thickness:g} mm** · Clear height below top rails: **{height-2*thickness:g} mm**')
 st.write(f'Overall depth before doors: **{depth+3:g} mm**')

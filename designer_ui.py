@@ -28,12 +28,19 @@ def render_designer(layout,rows):
     st.download_button('Export 2D design and approval JSON',json.dumps({'schema_version':1,'layout':layout,'units':rows,'approval':lock},indent=2,allow_nan=False),'kitchen_design_2d.json','application/json')
     selected=st.session_state.get('_designer_selected')
     if selected is not None and not 0<=selected<len(rows):selected=None
-    event=_canvas(layout=layout,units=valid,selected=selected,revision=revision,locked=bool(lock),ack=st.session_state.get('_designer_event'),default=None,key='designer_canvas')
+    from unit_library import LIBRARY
+    if not valid and not lock:st.info('No draggable units yet. Drag a cabinet from the library below into the room, or click its Add button.')
+    event=_canvas(layout=layout,units=valid,library=LIBRARY,selected=selected,revision=revision,locked=bool(lock),ack=st.session_state.get('_designer_event'),default=None,key='designer_canvas')
     if event and isinstance(event,dict) and event.get('id')!=st.session_state.get('_designer_event'):
         st.session_state['_designer_event']=event.get('id')
         try:
             index=event.get('index')
             if event.get('revision')!=revision:raise ValueError('The canvas changed. Please select the unit again.')
+            if event.get('action')=='add':
+                updated=apply_event(rows,layout,event,lock,snapping)
+                st.session_state['_designer_selected']=len(updated)-1
+                from layout_ui import commit_scene
+                commit_scene(updated)
             if isinstance(index,bool) or not isinstance(index,int) or not 0<=index<len(rows):raise ValueError('Select a current unit.')
             st.session_state['_designer_selected']=index
             st.session_state['unit_pick_'+revision[:12]]=index

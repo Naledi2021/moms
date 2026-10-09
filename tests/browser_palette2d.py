@@ -1,0 +1,36 @@
+import asyncio
+import os
+from playwright.async_api import async_playwright
+
+async def main():
+ async with async_playwright() as p:
+  browser=await p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
+  page=await browser.new_page(viewport={'width':1440,'height':1100})
+  await page.goto(os.environ.get('MKP_TEST_URL','http://127.0.0.1:8506'),wait_until='networkidle')
+  await page.get_by_role('button',name='Confirm room layout',exact=True).click()
+  await page.get_by_role('button',name='Add library unit',exact=True).wait_for()
+  iframe=page.locator('iframe[src*="mkp_designer2d"]')
+  await iframe.wait_for()
+  frame=await (await iframe.element_handle()).content_frame()
+  await frame.wait_for_function('args && args.units.length===0')
+  chip=frame.get_by_role('button',name='Add Single door base',exact=True)
+  await chip.drag_to(frame.locator('#plan'))
+  await frame.wait_for_function('args.units.length===1')
+  print('Palette drop into empty plan passed:',await frame.evaluate('args.units[0].row'))
+  await frame.get_by_role('button',name='Add Three drawer base',exact=True).click()
+  await frame.wait_for_function('args.units.length===2')
+  print('Palette click add passed')
+  unit=frame.locator('polygon.unit').nth(0);await unit.scroll_into_view_if_needed();box=await unit.bounding_box();scale=await frame.evaluate('svg.getScreenCTM().a')
+  old=await frame.evaluate('args.units[0].row')
+  await page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2);await page.mouse.down()
+  await page.mouse.move(box['x']+box['width']/2+200*scale,box['y']+box['height']/2+200*scale,steps=10);await page.mouse.up()
+  await frame.wait_for_function('(old)=>Math.abs(args.units[0].row["X (mm)"]-old["X (mm)"]-200)<.01',arg=old)
+  print('Dragging newly placed unit passed')
+  await frame.get_by_role('button',name='Rotate 90°').click();await frame.wait_for_function('args.units[0].row["Rotation (deg)"]===90')
+  print('Rotation passed')
+  await page.get_by_role('button',name='Approve and lock layout',exact=True).click();await frame.wait_for_function('args.locked')
+  assert await frame.get_by_role('button',name='Add Single door base',exact=True).is_disabled()
+  print('Locked palette disabled passed')
+  assert not await page.locator('[data-testid="stException"]').count()
+  await browser.close()
+asyncio.run(main())

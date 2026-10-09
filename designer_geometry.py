@@ -122,6 +122,19 @@ def require_unlocked(lock):
 def apply_event(rows,layout,event,lock=None,snap=True):
     require_unlocked(lock)
     if not isinstance(event,dict) or event.get('revision')!=fingerprint(layout,rows):raise ValueError('This canvas is out of date. Retry on the refreshed plan.')
+    if event.get('action')=='add':
+        from unit_library import LIBRARY,library_row
+        kind=event.get('unit_type')
+        if kind not in LIBRARY:raise ValueError('Choose a cabinet from the library.')
+        if len(rows)>=30:raise ValueError('The design supports at most 30 units.')
+        spec=LIBRARY[kind]
+        if 'x' in event or 'y' in event:
+            row={'Name':f'{kind} {len(rows)+1}','Type':kind,'Width (mm)':spec['width'],'Height (mm)':spec['height'],'Depth (mm)':spec['depth'],
+                 'X (mm)':round(float(event['x']),3),'Y (mm)':round(float(event['y']),3),'Z (mm)':spec['elevation'],'Rotation (deg)':0,'Shelves':spec['shelves']}
+            if snap:row=snap_unit(row,rows,len(rows),layout)
+            validate_unit(row,layout)
+        else:row=library_row(kind,spec['width'],spec['height'],spec['depth'],rows,layout)
+        return deepcopy(rows)+[row]
     index=event.get('index')
     if isinstance(index,bool) or not isinstance(index,int) or not 0<=index<len(rows):raise ValueError('Select a current unit.')
     current=deepcopy(rows);row=current[index];action=event.get('action')

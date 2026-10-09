@@ -93,6 +93,7 @@ def render_room_layout():
     if not confirmed:return None
     st.session_state['_job_layout']=layout
     st.success('Room layout confirmed. Unit placement is unlocked.')
+    st.caption('The room image above is a static measurement preview. Add and drag cabinets in Full design → Interactive 2D floor plan below.')
     return layout
 
 SCENE_COLUMNS=['Name','Type','Width (mm)','Height (mm)','Depth (mm)','X (mm)','Y (mm)','Z (mm)','Rotation (deg)','Shelves']

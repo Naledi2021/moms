@@ -30,7 +30,11 @@ Durable storage across host resets requires paid persistent storage or a databas
 
 The **Full design** view now includes a locally served Streamlit v1 component
 with an SVG canvas. There are no CDN, JavaScript package or new Python dependency
-requirements. Click to select, drag to move, rotate 90° or delete after confirmation.
+requirements. The canvas includes a visible cabinet palette: drag a library button into the room
+or click Add to place a unit automatically. An empty plan shows explicit placement
+instructions. Click a placed unit to select, drag to move, rotate 90° or delete
+after confirmation. The interactive designer renders even when quotation pricing
+is incomplete; the initial measured-room image is a separate static preview.
 Arrow keys move by 10 mm (Shift: 1 mm). Changes are sent only when a gesture ends;
 Python checks the current scene fingerprint and validates every mutation. A stale
 event is rejected rather than overwriting a newer edit. Canvas events use 0.001 mm

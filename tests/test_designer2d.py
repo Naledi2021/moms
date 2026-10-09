@@ -144,4 +144,26 @@ class DesignerTests(unittest.TestCase):
             self.assertFalse(app.exception,[x.message for x in app.exception])
             self.assertTrue(app.button(key='assistant_apply').disabled)
 
+    def test_add_from_palette_to_empty_canvas_and_reject_locked_or_invalid(self):
+        event={'revision':fingerprint(self.layout,[]),'action':'add','unit_type':'Single door base','x':1000.25,'y':1100.5}
+        rows=apply_event([],self.layout,event,snap=False)
+        self.assertEqual(rows[0]['X (mm)'],1000.25);self.assertEqual(rows[0]['Depth (mm)'],500)
+        lock=approve_design(self.layout,rows)
+        with self.assertRaises(ValueError):apply_event(rows,self.layout,dict(event,revision=fingerprint(self.layout,rows)),lock)
+        with self.assertRaises(ValueError):apply_event([],self.layout,dict(event,x=-100))
+        with self.assertRaises(ValueError):apply_event([],self.layout,dict(event,unit_type='Unknown'))
+        clicked=apply_event([],self.layout,{'revision':fingerprint(self.layout,[]),'action':'add','unit_type':'Tall pantry'})
+        self.assertEqual(clicked[0]['Height (mm)'],2100)
+
+    def test_missing_sheet_prices_do_not_hide_or_block_designer(self):
+        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+        app.button(key='confirm_room_layout').click().run()
+        app.selectbox(key='carcass_supplier_basis').set_value('Per sheet / panel').run()
+        self.assertFalse(app.exception,[x.message for x in app.exception])
+        self.assertIsNone(app.number_input(key='carcass_supplier_price').value)
+        app.button(key='add_library_unit').click().run()
+        self.assertFalse(app.exception,[x.message for x in app.exception])
+        rows=next(table.value for table in app.dataframe if 'X (mm)' in table.value.columns)
+        self.assertEqual(len(rows),1)
+
 if __name__=='__main__':unittest.main()
