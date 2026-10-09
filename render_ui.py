@@ -1,6 +1,6 @@
 import streamlit as st
 from dataclasses import asdict
-from layout_ui import render_scene_editor,scene_boxes,plan_svg
+from layout_ui import render_scene_editor,scene_boxes,scene_preview,plan_svg
 from video_render import create_video, video_path
 from rendering import cabinet_geometry,technical_svg,sketch_svg,interactive_figure
 
@@ -20,7 +20,12 @@ def render_views(width,height,depth,thickness,shelves,clearance,door_thickness,h
         hardware=st.checkbox('Show illustrative hinges in Ultra',key='render_hardware')
         st.caption('Colours and finish are presentation choices. They do not change material prices. Hinge positions are illustrative, not a drilling template.')
     try:
-        boxes=scene_boxes(rows,layout,thickness,clearance,door_thickness,opened,floor) if scope=='Full design' else cabinet_geometry(width,height,depth,thickness,shelves,clearance,door_thickness,opened)
+        if scope=='Full design':
+            boxes,warnings,valid=scene_preview(rows,layout,thickness,clearance,door_thickness,opened,floor)
+            for warning in warnings:st.warning(warning)
+            st.info(f'Previewing {len(valid)} of {len(rows)} units.')
+            if not boxes:raise ValueError('Add a unit from the library, or complete the highlighted rows to preview the design.')
+        else:boxes=cabinet_geometry(width,height,depth,thickness,shelves,clearance,door_thickness,opened)
         lines=plan_svg(layout,boxes) if scope=='Full design' else technical_svg(width,height,depth,thickness,shelves,door_thickness)
         sketch=sketch_svg(boxes)
     except ValueError as error:

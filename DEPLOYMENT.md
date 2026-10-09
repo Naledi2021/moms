@@ -15,7 +15,9 @@
    KITCHEN_APP_PASSWORD = "REPLACE_WITH_YOUR_OWN_LONG_PASSWORD"
    ```
 
-   Optional: add `KITCHEN_VISION_API_KEY` here. Never put real secrets in GitHub.
+   Optional: add `KITCHEN_AI_API_KEY` for the design assistant and
+   `KITCHEN_VISION_API_KEY` for handwriting reading. The design assistant can reuse
+   the vision key. OpenAI API billing is required. Never put real secrets in GitHub.
 4. Deploy. `requirements.txt` installs Python dependencies and `packages.txt`
    installs OCR, PDF and video tools. Open the service's HTTPS app address and
    sign in with the password configured in Secrets.

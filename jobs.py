@@ -49,7 +49,7 @@ def save_job(name, state, snapshot, pdf, cutting_csv, job_id=None, path=None):
 
 def restore_revision(state, job_id, revision):
     for key in list(state):
-        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','_job_plan_import','_job_import_units'):
+        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt'):
             del state[key]
     for key,value in revision['state'].items():
         if is_job_key(key): state[key]=value
@@ -65,5 +65,5 @@ def restore_revision(state, job_id, revision):
 
 def clear_job(state):
     for key in list(state):
-        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','_job_plan_import','_job_import_units'):
+        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt'):
             del state[key]

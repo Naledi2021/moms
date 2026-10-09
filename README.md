@@ -1,5 +1,32 @@
 # Kitchen Workshop
 
+## Unit library and AI design assistant
+
+In Full design, use **Base unit library** to add single-door, double-door,
+two- or three-drawer, sink, oven, pull-out and open-shelf bases. Adjust dimensions,
+positions and rotation in the placement table. New units occupy the next free
+footprint, rather than the same origin. Valid rows remain visible when another
+row is incomplete or outside the room; the preview reports the skipped row and
+overlap warnings. Rotation uses conservative bounding rectangles for overlap
+warnings. Working aisles, openings and manufacturer clearances need review.
+
+The catalogue-and-placement workflow is inspired by kitchen CAD tools. These
+are illustrative presentation models, including drawer boxes and oven placeholders;
+they do not add manufacturing rules or whole-scene costs. Positions are edited
+numerically; direct mouse dragging of cabinets is not implemented.
+
+Expand **AI kitchen design assistant** after confirming the room. Set
+`KITCHEN_AI_API_KEY` in Streamlit hosting Secrets (an OpenAI API key with API
+billing). An existing `KITCHEN_VISION_API_KEY` can also be reused. Optional
+`KITCHEN_AI_MODEL` defaults to `gpt-4.1-mini`. On explicit **Ask AI**, the request,
+room, placed units and up to 80 current supplier products are sent to OpenAI;
+contact information and raw documents are excluded. The assistant answers questions
+and proposes supported units; review and click **Add proposed units to room**.
+Existing units remain intact. Proposals are validated and placed in free space;
+if the batch cannot fit, none of its units are added. AI does not calculate prices,
+generate production cuts or certify installation clearances. Live AI calls require
+a configured key and are not validated by the mocked service tests.
+
 Initial cabinet calculator for melamine, MDF and finished solid wood panels.
 
 Run from this directory:

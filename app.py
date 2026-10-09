@@ -291,5 +291,5 @@ snapshot = dict(
     cutting_list=frame.to_dict(orient='records'),
 )
 render_save_job(customer,snapshot,buffer.getvalue(),frame.to_csv(index=False))
-with st.expander('Next: design and customer assistant'):
-    st.write('Planned features: multiple cabinet types, room layouts, supplier price lists, timber costing, and AI answers grounded in your approved business information. Customer chat is not connected in this version.')
+with st.expander('Design capabilities'):
+    st.write('Use the base unit library and AI kitchen design assistant in Full design. Customer-facing chat, whole-room production costing and custom manufacturing rules remain to be developed.')
