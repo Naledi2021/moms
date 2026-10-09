@@ -2,6 +2,7 @@ import streamlit as st
 from dataclasses import asdict
 from layout_ui import render_scene_editor,scene_boxes,scene_preview,plan_svg
 from video_render import create_video, video_path
+from designer_geometry import floor_plan_svg
 from rendering import cabinet_geometry,technical_svg,sketch_svg,interactive_figure
 
 
@@ -26,7 +27,7 @@ def render_views(width,height,depth,thickness,shelves,clearance,door_thickness,h
             st.info(f'Previewing {len(valid)} of {len(rows)} units.')
             if not boxes:raise ValueError('Add a unit from the library, or complete the highlighted rows to preview the design.')
         else:boxes=cabinet_geometry(width,height,depth,thickness,shelves,clearance,door_thickness,opened)
-        lines=plan_svg(layout,boxes) if scope=='Full design' else technical_svg(width,height,depth,thickness,shelves,door_thickness)
+        lines=floor_plan_svg(layout,rows) if scope=='Full design' else technical_svg(width,height,depth,thickness,shelves,door_thickness)
         sketch=sketch_svg(boxes)
     except ValueError as error:
         st.info(str(error));return {'scene_rows':rows,'mode':mode}

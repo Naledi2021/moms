@@ -29,6 +29,7 @@ class LibraryTests(unittest.TestCase):
 
     def test_types_have_distinct_fronts_and_open_drawers_stay_visible(self):
         for kind,spec in LIBRARY.items():
+            if spec['category']!='Base':continue
             boxes=unit_geometry(kind,spec['width'],720,500,18,spec['shelves'],0,18)
             front=[b for b in boxes if b.kind=='door']
             expected={'Double door base':2,'Sink base':2,'Three drawer base':3,'Two drawer base':2,'Open shelf base':0,'Oven base':2}.get(kind,1)

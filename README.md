@@ -1,5 +1,71 @@
 # Kitchen Workshop
 
+## Interactive 2D designer milestone
+
+The **Full design** view now includes a locally served Streamlit v1 component
+with an SVG canvas. There are no CDN, JavaScript package or new Python dependency
+requirements. Click to select, drag to move, rotate 90° or delete after confirmation.
+Arrow keys move by 10 mm (Shift: 1 mm). Changes are sent only when a gesture ends;
+Python checks the current scene fingerprint and validates every mutation. A stale
+event is rejected rather than overwriting a newer edit. Canvas events use 0.001 mm
+precision; numerical forms retain entered dimensions and coordinates.
+
+Use the precise editor to change width, depth, height, elevation, XY position and
+rotation, or place a unit against a named wall using an exact offset. Wall placement
+turns cabinet fronts into the room. Optional snapping has a 20 mm tolerance, aligning
+footprint bounds with walls and neighbouring units sharing a span and elevation.
+For arbitrary rotations, snapping uses axis-aligned footprint bounds; collision
+checks use the actual rotated rectangle with a separating-axis test. Touching edges
+are permitted. Cabinet collisions also require overlapping vertical extents, so wall
+units can sit above base units.
+
+The catalogue keeps existing base units and adds Wall, Corner and Tall categories.
+New entries are single/double wall cabinets, a rectangular **blind corner base**,
+tall pantry and tall appliance housing. Elevation is adjustable. L-shaped and diagonal
+corner cabinets, custom room polygons, service fixtures and arbitrary curved shapes
+are not supported. These new entries are 2D footprints with placeholder volumes
+in existing 3D views; no new 3D renderer or production costing was added.
+
+Opening warnings use a door keep-clear strip extending inward by the opening width
+(up to 1000 mm), or a 100 mm strip at a window's measured sill and height. This
+approximation does not know hinge side, opening direction, actual door swing or
+required installation clearance. Invalid units remain repairable in the table and
+do not hide valid units. Plan SVG exports now use the authoritative unit footprints,
+not the panel geometry of the 3D presentation.
+
+**Approve and lock layout** is available after units are valid and no collision or
+opening warnings remain. Approval freezes a deep copy of room dimensions, openings
+and all unit rows with a fingerprint and timestamp. Room controls, measurement
+imports, placement table, canvas mutations and AI application are blocked while
+locked. To revise, explicitly check **I intend to revise this approved layout** and
+click **Unlock approved layout**. Save a quotation revision to persist the lock.
+Old revisions open without migration, and previous approved revisions remain intact.
+This is an accidental-edit guard, not role-based authorisation or a legally binding
+approval signature. Users with app access can deliberately unlock a layout.
+
+The AI assistant may suggest optional wall/offset or XY/rotation/elevation values.
+All proposals require explicit user application, geometry validation and a collision
+check; a conflicting batch is rejected completely. AI can answer questions about
+approved designs but cannot apply changes while locked. Live requests still require
+an OpenAI API key and billing. Service integration tests use simulated responses.
+
+Saving jobs retains exact room geometry, openings, placements and approval data.
+Viewing the single-cabinet presentation no longer discards the full design on save.
+**Export 2D design and approval JSON** is an additional portable backup; job-history
+exports remain the complete quotation archive. **Restore a downloaded job history**
+restores a complete exported job archive, preserving IDs, revisions and approvals;
+conflicting revisions are rejected and identical imports do nothing. The separate
+2D-only scene export does not support re-import in this milestone. Free Streamlit storage is still temporary: export important history and
+supplier prices before a redeployment.
+
+Validation: `python -m unittest discover -s tests -v`. Browser checks require
+Playwright plus Chromium and run against a separately started local app; those
+are development-only tools. The component uses the standard Streamlit message
+protocol and supported iframe bridge. Streamlit reruns on completed edits, so it
+is intended for a desktop, single-editor workflow of up to 30 units. True concurrent
+editing, shared durable storage, authentication roles and CAD-level interaction
+would require a dedicated frontend and transactional backend in a later milestone.
+
 ## Unit library and AI design assistant
 
 In Full design, use **Base unit library** to add single-door, double-door,
@@ -13,7 +79,7 @@ warnings. Working aisles, openings and manufacturer clearances need review.
 The catalogue-and-placement workflow is inspired by kitchen CAD tools. These
 are illustrative presentation models, including drawer boxes and oven placeholders;
 they do not add manufacturing rules or whole-scene costs. Positions are edited
-numerically; direct mouse dragging of cabinets is not implemented.
+numerically or by dragging on the new interactive 2D floor plan.
 
 Expand **AI kitchen design assistant** after confirming the room. Set
 `KITCHEN_AI_API_KEY` in Streamlit hosting Secrets (an OpenAI API key with API
@@ -71,9 +137,9 @@ Enter the job name, customer contact details, installation address, notes and st
 
 ## Room-first design and presentation
 
-Prepare and confirm a measured rectangular room layout before cabinet controls or placement become available. Add doors and windows by wall, offset, width, height and sill. Changing these inputs invalidates confirmation. Irregular room outlines, service points and automatic collision/door-swing checks are not implemented.
+Prepare and confirm a measured rectangular room layout before cabinet controls or placement become available. Add doors and windows by wall, offset, width, height and sill. Changing these inputs invalidates confirmation. Irregular room outlines and service points are not implemented. The 2D designer checks cabinet collisions and opening clearance zones; it does not simulate actual door swing.
 
-After confirmation, select **Full design**, add base cabinets, wardrobes, panels, worktops or appliance placeholders, then set their dimensions, positions and rotation. Up to 30 scene items are supported. The room floor can be shown. Wardrobes use a full top in the presentation model; their production construction rules are not yet configured. Items cannot extend outside the room bounds (small backing tolerance allowed). Check overlaps and all service/access clearances manually.
+After confirmation, select **Full design**, add base cabinets, wardrobes, panels, worktops or appliance placeholders, then set their dimensions, positions and rotation. Up to 30 scene items are supported. The room floor can be shown. Wardrobes use a full top in the presentation model; their production construction rules are not yet configured. Items cannot extend outside the room bounds (small backing tolerance allowed). Review the automatic 2D warnings and check all service/access clearances manually.
 
 Views: **Lines** provides the room plan with placed units (or front/side/top for a single cabinet), **Sketch** an isometric drawing, **3D** an interactive model, and **Ultra** detailed interactive finish shading/wood-grain with optional illustrative hinges. Door-open preview is available. SVG drawings and standalone interactive HTML can be exported.
 

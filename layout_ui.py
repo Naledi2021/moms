@@ -6,7 +6,7 @@ from xml.sax.saxutils import escape
 import pandas as pd
 import streamlit as st
 from rendering import Box,cabinet_geometry
-from unit_library import ALL_TYPES,BASE_TYPES,LIBRARY,unit_geometry,library_row,next_position
+from unit_library import ALL_TYPES,BASE_TYPES,LIBRARY,unit_geometry,library_row,next_position,TWO_D_TYPES
 
 OPENING_COLUMNS=['Type','Wall','Offset (mm)','Width (mm)','Height (mm)','Sill (mm)']
 
@@ -60,6 +60,11 @@ def plan_svg(layout,boxes=None):
 
 def render_room_layout():
     st.header('1. Prepare the room layout')
+    lock=st.session_state.get('_design_lock')
+    if lock:
+        st.info('Approved room and openings are locked. Unlock the design in the placement section to edit them.')
+        st.image(plan_svg(lock['layout']),width='stretch')
+        return lock['layout']
     st.caption('Enter measured rectangular room dimensions and openings. Confirm this plan before placing units. Irregular room outlines and service points are not supported yet.')
     a,b,c=st.columns(3)
     length=a.number_input('Room length — x (mm)',min_value=500.0,value=3000.0,step=10.0,key='design_room_length')
@@ -104,7 +109,9 @@ def scene_boxes(rows,layout,thickness,clearance,door_thickness,opened,floor=Fals
         w,h,d,x,y,z,angle=(float(row[k]) for k in SCENE_COLUMNS[2:9])
         shelves=float(row['Shelves'])
         if not all(math.isfinite(v) for v in (w,h,d,x,y,z,angle,shelves)) or min(w,h,d)<=0 or z<0 or h+z>layout['height'] or shelves<0 or shelves>20 or not shelves.is_integer():raise ValueError('Item dimensions, height and shelf count must be valid for the room.')
-        if kind in (*BASE_TYPES,'Wardrobe'):
+        if kind in TWO_D_TYPES:
+            local=[Box('2D catalogue footprint',(0,0,0),(w,d,h),'panel')]
+        elif kind in (*BASE_TYPES,'Wardrobe'):
             local=unit_geometry(kind,w,h,d,thickness,int(shelves),clearance,door_thickness,opened)
             if kind=='Wardrobe':
                 local=[b for b in local if b.name not in ('Front top rail','Rear top rail')]
@@ -117,7 +124,7 @@ def scene_boxes(rows,layout,thickness,clearance,door_thickness,opened,floor=Fals
             origin=(x+a*math.cos(theta)-b*math.sin(theta),y+a*math.sin(theta)+b*math.cos(theta),z+c)
             placed.append(Box(str(row['Name'])+' — '+box.name,origin,box.size,box.kind,box.angle+angle))
         # Check carcass footprints against room bounds; door reveals may project outward a few mm.
-        closed=unit_geometry(kind,w,h,d,thickness,int(shelves),clearance,door_thickness,False) if kind in BASE_TYPES else local
+        closed=unit_geometry(kind,w,h,d,thickness,int(shelves),clearance,door_thickness,False) if kind in BASE_TYPES and kind not in TWO_D_TYPES else local
         footprints=[Box(b.name,(x+b.origin[0]*math.cos(theta)-b.origin[1]*math.sin(theta),y+b.origin[0]*math.sin(theta)+b.origin[1]*math.cos(theta),z+b.origin[2]),b.size,b.kind,b.angle+angle) for b in closed]
         points=__import__('numpy').vstack([b.vertices() for b in footprints if b.kind!='door'])
         if points[:,0].min() < -3.1 or points[:,1].min() < -3.1 or points[:,0].max()>layout['length']+3.1 or points[:,1].max()>layout['width']+3.1:
@@ -128,6 +135,7 @@ def scene_boxes(rows,layout,thickness,clearance,door_thickness,opened,floor=Fals
 
 
 def current_scene_rows():
+    if st.session_state.get('_design_lock'):return st.session_state['_design_lock']['rows']
     rows=st.session_state.get('_job_scene_rows',[])
     current=pd.DataFrame(rows,columns=SCENE_COLUMNS)
     editor=st.session_state.get('design_scene_editor',{})
@@ -139,6 +147,8 @@ def current_scene_rows():
 
 
 def commit_scene(rows):
+    from designer_geometry import require_unlocked
+    require_unlocked(st.session_state.get('_design_lock'))
     st.session_state['_job_scene_rows']=rows
     st.session_state.pop('design_scene_editor',None)
     st.rerun()
@@ -148,28 +158,56 @@ def render_scene_editor(layout,width,height,depth):
     st.subheader('2. Unit library and placement')
     st.caption('Choose a unit from the library and add it. New units go in the next free space instead of stacking at the same position. Edit positions and rotation below. Library units are presentation models; current quotes still cover the configured base unit times its quantity.')
     current=current_scene_rows()
+    from designer_geometry import approve_design
+    locked=bool(st.session_state.get('_design_lock'))
+    if locked:
+        st.success('Approved layout is locked. Save a quotation revision to retain the approval.')
+        unlock_confirmed=st.checkbox('I intend to revise this approved layout',key='unlock_confirmed')
+        if st.button('Unlock approved layout',key='unlock_design',disabled=not unlock_confirmed):
+            lock=st.session_state.pop('_design_lock')
+            st.session_state['_job_scene_rows']=lock['rows']
+            st.session_state['_job_room_openings']=lock['layout']['openings']
+            for key,field in (('design_room_length','length'),('design_room_width','width'),('design_room_height','height')):
+                st.session_state[key]=lock['layout'][field]
+            st.session_state['design_layout_signature']=hashlib.sha256(json.dumps(lock['layout'],sort_keys=True).encode()).hexdigest()
+            st.session_state.pop('design_scene_editor',None)
+            st.session_state.pop('design_openings_editor',None)
+            st.session_state.pop('unlock_confirmed',None)
+            st.rerun()
+    elif st.button('Approve and lock layout',key='approve_design',disabled=not current):
+        try:
+            st.session_state['_design_lock']=approve_design(layout,current)
+            st.session_state['_job_scene_rows']=current
+            st.session_state.pop('design_scene_editor',None)
+            st.rerun()
+        except ValueError as error:st.error(str(error))
     with st.expander('Base unit library',expanded=True):
-        selected=st.selectbox('Library unit',list(LIBRARY),key='library_selection')
+        category=st.selectbox('Cabinet category',['Base','Wall','Corner','Tall'],key='library_category',disabled=locked)
+        choices=[kind for kind,spec in LIBRARY.items() if spec['category']==category]
+        selected=st.selectbox('Library unit',choices,key='library_selection',disabled=locked)
         spec=LIBRARY[selected]
         st.caption(spec['description'])
         a,b,c=st.columns(3)
-        w=a.number_input('Library width (mm)',min_value=150.0,max_value=2400.0,value=float(spec['width']),step=50.0,key='library_width_'+selected)
-        h=b.number_input('Library height (mm)',min_value=200.0,max_value=2400.0,value=720.0,step=10.0,key='library_height')
-        d=c.number_input('Library depth (mm)',min_value=200.0,max_value=1200.0,value=500.0,step=10.0,key='library_depth')
+        w=a.number_input('Library width (mm)',min_value=150.0,max_value=2400.0,value=float(spec['width']),step=50.0,key='library_width_'+selected,disabled=locked)
+        h=b.number_input('Library height (mm)',min_value=200.0,max_value=2400.0,value=float(spec['height']),step=10.0,key='library_height_'+category,disabled=locked)
+        d=c.number_input('Library depth (mm)',min_value=200.0,max_value=1200.0,value=float(spec['depth']),step=10.0,key='library_depth_'+category,disabled=locked)
+        elevation=st.number_input('Library elevation above floor (mm)',min_value=0.0,value=float(spec['elevation']),step=1.0,key='library_elevation_'+category,disabled=locked)
         from rendering import sketch_svg
         try:
-            st.image(sketch_svg(unit_geometry(selected,w,h,d,float(st.session_state.get('job_thickness',18)),spec['shelves'],0,float(st.session_state.get('job_door_thickness',18)))),width=240)
+            if selected in TWO_D_TYPES:
+                st.caption(f'2D footprint: {w:g} × {d:g} mm; default elevation {spec["elevation"]:g} mm. New catalogue types use placeholder volumes in existing 3D views.')
+            else:st.image(sketch_svg(unit_geometry(selected,w,h,d,float(st.session_state.get('job_thickness',18)),spec['shelves'],0,float(st.session_state.get('job_door_thickness',18)))),width=240)
         except ValueError as error:st.warning(str(error))
-        if st.button('Add library unit',key='add_library_unit'):
+        if st.button('Add library unit',key='add_library_unit',disabled=locked):
             try:
                 if len(current)>=30:raise ValueError('Use at most 30 units.')
-                commit_scene(current+[library_row(selected,w,h,d,current,layout)])
+                commit_scene(current+[library_row(selected,w,h,d,current,layout,elevation)])
             except ValueError as error:st.error(str(error))
-    template=st.selectbox('Other design item',['Kitchen','Wardrobe','TV unit','Custom'],key='design_template')
+    template=st.selectbox('Other design item',['Kitchen','Wardrobe','TV unit','Custom'],key='design_template',disabled=locked)
     pending=st.session_state.get('_job_import_units',[])
     if pending:
         st.caption(f'{len(pending)} reviewed plan items ready to add.')
-        if st.button('Add reviewed plan items to layout',key='add_reviewed_plan_items'):
+        if st.button('Add reviewed plan items to layout',key='add_reviewed_plan_items',disabled=locked):
             try:
                 planned=list(current)
                 if len(planned)+len(pending)>30:raise ValueError('Use at most 30 units.')
@@ -181,7 +219,7 @@ def render_scene_editor(layout,width,height,depth):
                 st.session_state['_job_import_units']=[]
                 commit_scene(planned)
             except ValueError as error:st.error(str(error))
-    if st.button('Add design item',key='add_design_item'):
+    if st.button('Add design item',key='add_design_item',disabled=locked):
         try:
             if len(current)>=30:raise ValueError('Use at most 30 units.')
             row=dict(zip(SCENE_COLUMNS,[f'Unit {len(current)+1}','Base cabinet',width,height,depth,0,0,0,0,1]))
@@ -192,11 +230,13 @@ def render_scene_editor(layout,width,height,depth):
             row.update({'X (mm)':x,'Y (mm)':y})
             commit_scene(current+[row])
         except ValueError as error:st.error(str(error))
-    edited=st.data_editor(pd.DataFrame(st.session_state.get('_job_scene_rows',[]),columns=SCENE_COLUMNS),num_rows='dynamic',hide_index=True,key='design_scene_editor',column_config={
+    edited=st.data_editor(pd.DataFrame(st.session_state.get('_job_scene_rows',[]),columns=SCENE_COLUMNS),num_rows='dynamic',hide_index=True,key='design_scene_editor',disabled=locked,column_config={
        'Type':st.column_config.SelectboxColumn(options=list(ALL_TYPES),required=True),
        **{c:st.column_config.NumberColumn(required=True) for c in SCENE_COLUMNS[2:]}})
     rows=edited.to_dict(orient='records')
     st.caption(f'{len(rows)} units in the design. X runs left to right; Y runs front to back. Rotation is around each unit’s local corner. Adjacent units may touch; check working aisles and opening clearances.')
+    from designer_ui import render_designer
+    rows=render_designer(layout,rows)
     from design_assistant import render_assistant
     render_assistant(layout,rows)
     return rows

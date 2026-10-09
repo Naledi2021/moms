@@ -7,6 +7,9 @@ from plan_import import document_pages,local_ocr,vision_read,measurement_candida
 
 
 def render_plan_import():
+    if st.session_state.get('_design_lock'):
+        st.caption('Plan imports cannot modify an approved layout. Unlock it to import measurements.')
+        return
     with st.expander('Read a sketch, plan or PDF'):
         st.write('Upload a photo of a sketch or a PDF plan. Review the extracted text and measurements before using them in the room layout.')
         file=st.file_uploader('Sketch or plan document',type=['png','jpg','jpeg','pdf'],key='plan_document_upload')

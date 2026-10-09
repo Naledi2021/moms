@@ -12,6 +12,16 @@ LIBRARY = {
     'Pull-out base': {'width':300, 'shelves':0, 'description':'Narrow front with illustrative pull-out trays.'},
     'Open shelf base': {'width':600, 'shelves':2, 'description':'Open front and two shelves.'},
 }
+for spec in LIBRARY.values():
+    spec.update(category='Base',height=720,depth=500,elevation=0)
+LIBRARY.update({
+    'Single door wall':dict(category='Wall',width=600,height=720,depth=320,elevation=1400,shelves=2,description='Wall-mounted rectangular cabinet footprint; check elevation and window clearance.'),
+    'Double door wall':dict(category='Wall',width=900,height=720,depth=320,elevation=1400,shelves=2,description='Wide wall cabinet footprint.'),
+    'Blind corner base':dict(category='Corner',width=1000,height=720,depth=600,elevation=0,shelves=1,description='Rectangular blind-corner base. This is not an L-shaped or diagonal corner cabinet; review access and fillers.'),
+    'Tall pantry':dict(category='Tall',width=600,height=2100,depth=600,elevation=0,shelves=4,description='Full-height pantry footprint.'),
+    'Tall appliance housing':dict(category='Tall',width=600,height=2100,depth=600,elevation=0,shelves=0,description='Full-height appliance housing footprint; appliance clearances require verification.'),
+})
+TWO_D_TYPES=tuple(kind for kind,spec in LIBRARY.items() if spec['category']!='Base')
 BASE_TYPES = ('Base cabinet', *LIBRARY)
 ALL_TYPES = (*BASE_TYPES, 'Wardrobe', 'Panel', 'Worktop', 'Appliance')
 
@@ -51,13 +61,14 @@ def unit_geometry(kind,w,h,d,t,shelves,clearance,door_t,opened=False):
     return boxes
 
 
-def next_position(rows,w,d,layout):
+def next_position(rows,w,d,layout,elevation=0,height=720):
     """Find an empty footprint, front row first, with door space inside the room."""
     occupied=[]
     for row in rows:
         try:
             x,y,z=(float(row[k]) for k in ('X (mm)','Y (mm)','Z (mm)'))
             rw,rd,rh=(float(row[k]) for k in ('Width (mm)','Depth (mm)','Height (mm)'))
+            if min(z+rh,elevation+height)-max(z,elevation)<=0:continue
             angle=float(row['Rotation (deg)'])
             if not all(math.isfinite(v) for v in (x,y,z,rw,rd,rh,angle)):continue
             p=Box('footprint',(x,y,z),(rw,rd,rh),angle=angle).vertices()
@@ -72,10 +83,11 @@ def next_position(rows,w,d,layout):
     raise ValueError('No free space for this unit. Reposition existing units, reduce the width, or revise the room layout.')
 
 
-def library_row(kind,w,h,d,rows,layout):
+def library_row(kind,w,h,d,rows,layout,elevation=None):
     if kind not in LIBRARY:raise ValueError('Select a library unit.')
-    if not all(math.isfinite(v) for v in (w,h,d)) or w<150 or h<200 or d<200 or h>layout['height']:
+    elevation=LIBRARY[kind].get('elevation',0) if elevation is None else float(elevation)
+    if not all(math.isfinite(v) for v in (w,h,d,elevation)) or elevation<0 or w<150 or h<200 or d<200 or h+elevation>layout['height']:
         raise ValueError('Use valid unit dimensions that fit the room height.')
-    x,y=next_position(rows,w,d,layout)
+    x,y=next_position(rows,w,d,layout,elevation,h)
     return {'Name':f'{kind} {len(rows)+1}','Type':kind,'Width (mm)':w,'Height (mm)':h,'Depth (mm)':d,
-            'X (mm)':x,'Y (mm)':y,'Z (mm)':0,'Rotation (deg)':0,'Shelves':LIBRARY[kind]['shelves']}
+            'X (mm)':x,'Y (mm)':y,'Z (mm)':elevation,'Rotation (deg)':0,'Shelves':LIBRARY[kind]['shelves']}

@@ -276,6 +276,9 @@ for line in lines:
     y -= 22
 pdf.save()
 st.download_button('Download estimate PDF', buffer.getvalue(), 'kitchen_estimate.pdf', 'application/pdf')
+if st.session_state.get('render_scope')=='Single cabinet':
+    from layout_ui import current_scene_rows
+    design_views['scene_rows']=current_scene_rows()
 snapshot = dict(
     total=quote['total']*units, subtotal=quote['subtotal']*units, tax=quote['tax']*units,
     pricing_status='Incomplete / preliminary' if unpriced or min(price,back_price,door_price)<=0 else 'Prices entered',
@@ -287,6 +290,7 @@ snapshot = dict(
     plan_import=st.session_state.get('_job_plan_import'),
     plan_pending_units=st.session_state.get('_job_import_units',[]),
     layout=room_layout,
+    design_lock=st.session_state.get('_design_lock'),
     design_views=design_views,
     cutting_list=frame.to_dict(orient='records'),
 )

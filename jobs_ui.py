@@ -1,13 +1,21 @@
 import base64
 import pandas as pd
 import streamlit as st
-from jobs import load_jobs, restore_revision, clear_job, capture_state, save_job
+from jobs import load_jobs, restore_revision, clear_job, capture_state, save_job, import_job_history
 
 
 def render_saved_jobs():
     with st.expander('Saved customer jobs and quotations'):
         if st.button('Start a new job',key='new_job'):
             clear_job(st.session_state);st.rerun()
+        with st.expander('Restore a downloaded job history'):
+            archive=st.file_uploader('Exported job-history JSON',type=['json'],key='job_history_upload')
+            if st.button('Restore job history',disabled=archive is None,key='restore_job_history'):
+                try:
+                    changed=import_job_history(archive.getvalue())
+                    st.session_state['_job_save_message']='History restored. Existing revisions were preserved.' if changed else 'This history is already saved.'
+                    st.rerun()
+                except (ValueError,KeyError,TypeError,OSError) as error:st.error(f'Could not restore history: {error}')
         data=load_jobs()
         if not data['jobs']:
             st.caption('No jobs saved yet. Enter customer details and cabinet settings, then save at the bottom of the estimate.')

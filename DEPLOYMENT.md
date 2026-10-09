@@ -1,5 +1,19 @@
 # Deploy MKP Kitchen Design Studio
 
+## Updating the existing deployment
+
+The interactive 2D milestone uses the same app.py, requirements and deployment.
+Commit the locally served `components/designer2d/index.html` with the Python source.
+No CDN or frontend build is required. Keep existing Secrets unchanged.
+
+Before updating a free-hosted instance, export each saved job history, download the
+current supplier-price CSV, and retain original supplier-upload spreadsheets for
+historical and future-dated updates. Do not rely on free local storage surviving a
+redeployment. After an update, verify the canvas and saved jobs; the new **Restore
+a downloaded job history** option can recover job JSON archives if necessary and
+rejects conflicts instead of overwriting revisions. Existing JSON files require
+no migration. This workspace cannot directly back up the deployed instance's files.
+
 ## Free preview: Streamlit Community Cloud
 
 1. Create a new GitHub repository for this app, separate from church_streamlit.

@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interactive kitchen floor plan</title>
+<style>body{margin:0;font:14px system-ui;color:#15304a;background:#fff}#tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px}button{padding:8px 12px;border:1px solid #bccbd6;border-radius:6px;background:#f4f7fa;cursor:pointer}button:disabled{opacity:.5;cursor:default}#plan{width:100%;height:540px;background:#f8f7f2;touch-action:none;outline:none;border:1px solid #c8d2da;box-sizing:border-box}polygon.unit{cursor:grab;stroke:#385b74;stroke-width:8}polygon.selected{stroke:#f0a021;stroke-width:16}#status{padding:8px;min-height:20px}text{pointer-events:none;user-select:none}.locked polygon.unit{cursor:default}</style>
+<div id="tools"><button id="rotate" disabled>Rotate 90°</button><button id="delete" disabled>Delete selected</button><span id="help">Click a unit to select; drag to move. Arrow keys: 10 mm, Shift: 1 mm.</span></div>
+<svg id="plan" tabindex="0" role="application" aria-label="Interactive kitchen floor plan"></svg><div id="status" role="status" aria-live="polite">Loading plan…</div>
+<script>
+let args=null,selected=null,drag=null,pending=false;
+const svg=document.getElementById('plan'),ns='http://www.w3.org/2000/svg';
+function post(type,data={}){window.parent.postMessage({isStreamlitMessage:true,type,...data},'*')}
+function element(tag,attrs,text){let el=document.createElementNS(ns,tag);for(let [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(text!==undefined)el.textContent=text;svg.appendChild(el);return el}
+function points(row){let a=row['Rotation (deg)']*Math.PI/180,c=Math.cos(a),s=Math.sin(a),x=row['X (mm)'],y=row['Y (mm)'],w=row['Width (mm)'],d=row['Depth (mm)'];return [[0,0],[w,0],[w,d],[0,d]].map(([u,v])=>[x+u*c-v*s,y+u*s+v*c])}
+function position(e){let p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+function selectedRow(){return args.units.find(u=>u.index===selected)}
+function send(action,extra={}){if(!args||pending||(args.locked&&action!=='select'))return;pending=true;post('streamlit:setComponentValue',{value:{id:crypto.randomUUID(),action,index:selected,revision:args.revision,...extra}});buttons();document.getElementById('status').textContent='Applying change…'}
+function buttons(){let blocked=!selectedRow()||args.locked||pending;document.getElementById('rotate').disabled=blocked;document.getElementById('delete').disabled=blocked}
+function draw(){svg.replaceChildren();let L=args.layout.length,D=args.layout.width,F=Math.max(L,D)/65;svg.setAttribute('viewBox',`${-F*5} ${-F*4} ${L+F*10} ${D+F*8}`);svg.classList.toggle('locked',args.locked);
+ let defs=element('defs',{}),pat=document.createElementNS(ns,'pattern');pat.id='grid';pat.setAttribute('width','100');pat.setAttribute('height','100');pat.setAttribute('patternUnits','userSpaceOnUse');let path=document.createElementNS(ns,'path');path.setAttribute('d','M 100 0 L 0 0 0 100');path.setAttribute('fill','none');path.setAttribute('stroke','#e1e5e5');path.setAttribute('stroke-width','2');pat.appendChild(path);defs.appendChild(pat);
+ element('rect',{x:0,y:0,width:L,height:D,fill:'url(#grid)',stroke:'#15304a','stroke-width':12});
+ element('text',{x:L/2,y:-F*1.7,'text-anchor':'middle','font-size':F*1.5},`FRONT — ${L} mm`);element('text',{x:L/2,y:D+F*2.2,'text-anchor':'middle','font-size':F*1.5},`BACK — room depth ${D} mm`);
+ element('text',{x:-F*4.5,y:D/2,'font-size':F*1.5},'LEFT');element('text',{x:L+F*.5,y:D/2,'font-size':F*1.5},'RIGHT');
+ for(let o of args.layout.openings){let off=o['Offset (mm)'],w=o['Width (mm)'],wall=o.Wall,x1,y1,x2,y2;if(wall==='Front'||wall==='Back'){x1=off;x2=off+w;y1=y2=wall==='Front'?0:D}else{y1=off;y2=off+w;x1=x2=wall==='Left'?0:L}element('line',{x1,y1,x2,y2,stroke:o.Type==='Door'?'#ed9433':'#258fca','stroke-width':28});}
+ for(let u of args.units){let row=drag&&drag.index===u.index?{...u.row,'X (mm)':drag.x,'Y (mm)':drag.y}:u.row,p=points(row),cx=p.reduce((s,a)=>s+a[0],0)/4,cy=p.reduce((s,a)=>s+a[1],0)/4;
+ let color=u.row['Z (mm)']>0?'#d7e7f5':'#d5dfd4';let poly=element('polygon',{points:p.map(v=>v.join(',')).join(' '),fill:color,'fill-opacity':.85,class:'unit'+(selected===u.index?' selected':''),'data-index':u.index,'aria-label':row.Name});
+ element('text',{x:cx,y:cy-F*.4,'text-anchor':'middle','font-size':F*1.4},row.Name.length>14?row.Name.slice(0,13)+'…':row.Name);element('text',{x:cx,y:cy+F*1.1,'text-anchor':'middle','font-size':F*1.1},`${row['Width (mm)']} × ${row['Depth (mm)']}`);
+ poly.addEventListener('pointerdown',e=>{if(pending)return;e.preventDefault();selected=u.index;svg.focus();let p=position(e);if(!args.locked)drag={index:u.index,startX:p.x,startY:p.y,baseX:row['X (mm)'],baseY:row['Y (mm)'],x:row['X (mm)'],y:row['Y (mm)'],pointer:e.pointerId};svg.setPointerCapture(e.pointerId);draw();buttons();document.getElementById('status').textContent=`Selected ${row.Name}${args.locked?' — approved and locked':''}`});}
+ buttons();}
+svg.addEventListener('pointermove',e=>{if(!drag)return;let p=position(e);drag.x=drag.baseX+p.x-drag.startX;drag.y=drag.baseY+p.y-drag.startY;draw();document.getElementById('status').textContent=`X ${drag.x.toFixed(1)} mm; Y ${drag.y.toFixed(1)} mm`});
+svg.addEventListener('pointerup',e=>{if(drag){let d=drag;drag=null;if(Math.hypot(d.x-d.baseX,d.y-d.baseY)>.01)send('move',{x:d.x,y:d.y});else send('select');}else if(selected!==null)send('select')});
+svg.addEventListener('pointercancel',()=>{drag=null;draw()});
+document.getElementById('rotate').onclick=()=>send('rotate');document.getElementById('delete').onclick=()=>{if(confirm('Delete the selected unit?'))send('delete')};
+svg.addEventListener('keydown',e=>{let u=selectedRow();if(!u||args.locked||pending)return;let step=e.shiftKey?1:10,dx=0,dy=0;if(e.key==='ArrowLeft')dx=-step;if(e.key==='ArrowRight')dx=step;if(e.key==='ArrowUp')dy=-step;if(e.key==='ArrowDown')dy=step;if(dx||dy){e.preventDefault();send('move',{x:u.row['X (mm)']+dx,y:u.row['Y (mm)']+dy})}if(e.key.toLowerCase()==='r'){e.preventDefault();send('rotate')}});
+window.addEventListener('message',e=>{if(e.source!==window.parent||e.data.type!=='streamlit:render')return;args=e.data.args;selected=args.selected;pending=false;drag=null;draw();document.getElementById('status').textContent=args.locked?'Approved layout — editing is locked.':'Select and drag a unit. Blue units are elevated cabinets. Snapping is checked when you release.';post('streamlit:setFrameHeight',{height:Math.ceil(document.body.scrollHeight)+4})});
+window.addEventListener('resize',()=>{if(args){draw();post('streamlit:setFrameHeight',{height:Math.ceil(document.body.scrollHeight)+4})}});
+post('streamlit:componentReady',{apiVersion:1});post('streamlit:setFrameHeight',{height:640});
+</script></html>
