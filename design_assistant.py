@@ -26,18 +26,37 @@ def validate_proposal(data):
         import math
         if not all(math.isfinite(v) for v in dims.values()) or not 150<=dims['width']<=2400 or not 200<=dims['height']<=2400 or not 200<=dims['depth']<=1200:raise ValueError('Proposed dimensions are outside supported limits.')
         placed={'type':unit['type'],**dims}
-        if 'wall' in unit:
+        if unit.get('wall') is not None:
             if unit['wall'] not in ('Front','Back','Left','Right'):raise ValueError('Invalid proposed wall.')
             offset=float(unit.get('offset',0))
             if not math.isfinite(offset) or offset<0:raise ValueError('Invalid proposed wall offset.')
             placed.update(wall=unit['wall'],offset=offset)
         for key in ('x','y','rotation','elevation'):
-            if key in unit:
+            if unit.get(key) is not None:
                 value=float(unit[key])
                 if not math.isfinite(value):raise ValueError('Invalid proposed position.')
                 placed[key]=value
         result.append(placed)
     return {'answer':data['answer'][:12000],'units':result}
+
+
+class AIRequestError(ValueError):
+    """Safe diagnostic text; never includes response bodies or credentials."""
+
+
+def api_failure(response):
+    try:
+        payload=response.json()
+        code=payload.get('error',{}).get('code') if isinstance(payload,dict) else None
+    except (ValueError,TypeError,AttributeError):code=None
+    status=response.status_code
+    if status==401:return 'OpenAI rejected the API key (HTTP 401). Replace KITCHEN_AI_API_KEY in Streamlit Secrets with a valid OpenAI API key.'
+    if status==429 and code=='insufficient_quota':return 'OpenAI API credit or quota is exhausted (HTTP 429). Check API billing, available credit and project spending limits. A ChatGPT subscription does not include API credit.'
+    if status==429:return 'OpenAI rate limit reached (HTTP 429). Wait briefly and retry, or check your API project limits.'
+    if status in (403,404):return f'The configured API project cannot access the selected model (HTTP {status}). Check project permissions and KITCHEN_AI_MODEL in Streamlit Secrets.'
+    if status==400:return 'OpenAI rejected the request settings (HTTP 400). Check that KITCHEN_AI_MODEL supports chat completions and JSON responses.'
+    if status>=500:return 'The OpenAI service is temporarily unavailable. Retry shortly.'
+    return f'OpenAI returned HTTP {status}. Check your API project settings.'
 
 
 def ask_ai(prompt,layout,rows,products,key):
@@ -46,8 +65,19 @@ def ask_ai(prompt,layout,rows,products,key):
     r=requests.post('https://api.openai.com/v1/chat/completions',headers={'Authorization':'Bearer '+key},json={
         'model':os.environ.get('KITCHEN_AI_MODEL','gpt-4.1-mini'),'messages':[{'role':'system','content':system},{'role':'user','content':json.dumps(context,allow_nan=False,default=str)+'\nCustomer request:\n'+prompt}],
         'response_format':{'type':'json_object'},'max_tokens':2500},timeout=45)
-    if not r.ok:raise ValueError(f'AI service returned HTTP {r.status_code}. Check the hosting API key, billing and model access.')
-    return validate_proposal(json.loads(r.json()['choices'][0]['message']['content']))
+    if not r.ok:raise AIRequestError(api_failure(r))
+    try:
+        choice=r.json()['choices'][0]
+        if choice.get('finish_reason')=='length':raise AIRequestError('The AI response exceeded its length limit. Request a smaller group of units, then retry.')
+        message=choice['message']
+        if message.get('refusal'):raise AIRequestError('The AI declined this request. Rephrase it as a kitchen layout question.')
+        data=json.loads(message['content'])
+    except (ValueError,KeyError,TypeError,IndexError) as error:
+        if isinstance(error,AIRequestError):raise
+        raise AIRequestError('The AI returned an unreadable response. Retry with a shorter request using the available cabinet library.') from None
+    try:return validate_proposal(data)
+    except (ValueError,KeyError,TypeError):
+        raise AIRequestError('The AI responded, but its proposed units or measurements are unsupported. Ask it to use exact names from the cabinet library, dimensions in millimetres, and Front, Back, Left or Right wall names. Your layout has not changed.') from None
 
 
 def plan_rows(proposal,rows,layout,lock=None):
@@ -56,7 +86,7 @@ def plan_rows(proposal,rows,layout,lock=None):
     if len(current)+len(proposal['units'])>30:raise ValueError('The design supports at most 30 units.')
     for unit in proposal['units']:
         row=library_row(unit['type'],unit['width'],unit['height'],unit['depth'],current,layout,unit.get('elevation'))
-        if 'wall' in unit:row=along_wall(row,unit['wall'],unit.get('offset',0),layout)
+        if unit.get('wall') is not None:row=along_wall(row,unit['wall'],unit.get('offset',0),layout)
         for key,column in (('x','X (mm)'),('y','Y (mm)'),('rotation','Rotation (deg)'),('elevation','Z (mm)')):
             if key in unit:row[column]=unit[key]
         validate_unit(row,layout)
@@ -84,9 +114,18 @@ def render_assistant(layout,rows):
                 with st.spinner('Reviewing your kitchen request…'):
                     proposal=ask_ai(prompt,layout,rows,products,key)
                 st.session_state['_assistant_proposal']=proposal
-            except (requests.RequestException,ValueError,KeyError,TypeError):
+            except AIRequestError as error:
                 st.session_state.pop('_assistant_proposal',None)
-                st.error('The AI request could not be completed. Check your API key, API billing and model access in hosting settings, then try again.')
+                st.error(str(error))
+            except requests.Timeout:
+                st.session_state.pop('_assistant_proposal',None)
+                st.error('The AI service timed out. Retry with a smaller request.')
+            except requests.RequestException:
+                st.session_state.pop('_assistant_proposal',None)
+                st.error('The app could not connect to OpenAI. Check hosting network access or retry shortly.')
+            except (ValueError,KeyError,TypeError):
+                st.session_state.pop('_assistant_proposal',None)
+                st.error('The current design or supplier data is incomplete. Complete numeric placement fields and retry. Your layout has not changed.')
         proposal=st.session_state.get('_assistant_proposal')
         if proposal:
             st.write(proposal['answer'])
