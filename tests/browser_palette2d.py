@@ -20,6 +20,12 @@ async def main():
   await frame.get_by_role('button',name='Add Three drawer base',exact=True).click()
   await frame.wait_for_function('args.units.length===2')
   print('Palette click add passed')
+  assert await frame.locator('#palette button').count()==13
+  await frame.get_by_role('button',name='Add Sink base',exact=True).click()
+  await frame.wait_for_function('args.units.length===3 && pending===false')
+  assert await frame.locator('polygon.unit').count()==3
+  assert await frame.evaluate('new Set(args.units.map(u=>u.row.Name)).size')==3
+  print('All 13 library types present; three different units remain visible')
   unit=frame.locator('polygon.unit').nth(0);await unit.scroll_into_view_if_needed();box=await unit.bounding_box();scale=await frame.evaluate('svg.getScreenCTM().a')
   old=await frame.evaluate('args.units[0].row')
   await page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2);await page.mouse.down()

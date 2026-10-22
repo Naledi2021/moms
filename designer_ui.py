@@ -29,6 +29,7 @@ def render_designer(layout,rows):
     selected=st.session_state.get('_designer_selected')
     if selected is not None and not 0<=selected<len(rows):selected=None
     from unit_library import LIBRARY
+    st.caption(f'{len(LIBRARY)} cabinet types available · {len(valid)} of {len(rows)} placed units visible. Add buttons create another unit; they do not replace the selected unit.')
     if not valid and not lock:st.info('No draggable units yet. Drag a cabinet from the library below into the room, or click its Add button.')
     event=_canvas(layout=layout,units=valid,library=LIBRARY,selected=selected,revision=revision,locked=bool(lock),ack=st.session_state.get('_designer_event'),default=None,key='designer_canvas')
     if event and isinstance(event,dict) and event.get('id')!=st.session_state.get('_designer_event'):

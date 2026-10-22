@@ -8,7 +8,12 @@ from rendering import cabinet_geometry,technical_svg,sketch_svg,interactive_figu
 
 def render_views(width,height,depth,thickness,shelves,clearance,door_thickness,hinges,layout):
     st.subheader('Design views and videos')
+    if st.session_state.get('render_scope')=='Single cabinet':
+        st.info('Single cabinet preview shows only one unit. Use Full design to place and view the whole kitchen.')
+        def open_full_design():st.session_state['render_scope']='Full design'
+        st.button('Open full kitchen designer',key='open_full_designer',on_click=open_full_design)
     scope=st.radio('Design scope',['Full design','Single cabinet'],horizontal=True,key='render_scope')
+    if scope=='Full design':st.caption('Add each physical cabinet to the plan. The Identical cabinets quantity sets quotation quantities; it does not automatically place units.')
     rows=render_scene_editor(layout,width,height,depth) if scope=='Full design' else []
     floor=st.checkbox('Show room floor',key='render_floor') if scope=='Full design' else False
     st.caption('Visualisations use finished dimensions. Scene placements are separate from the current single-cabinet quotation and cutting list.')

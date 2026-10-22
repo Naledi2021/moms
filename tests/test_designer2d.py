@@ -166,4 +166,16 @@ class DesignerTests(unittest.TestCase):
         rows=next(table.value for table in app.dataframe if 'X (mm)' in table.value.columns)
         self.assertEqual(len(rows),1)
 
+    def test_single_preview_can_return_to_full_design_without_losing_units(self):
+        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+        app.button(key='confirm_room_layout').click().run()
+        for _ in range(3):app.button(key='add_library_unit').click().run()
+        app.radio(key='render_scope').set_value('Single cabinet').run()
+        self.assertFalse(app.exception,[x.message for x in app.exception])
+        app.button(key='open_full_designer').click().run()
+        self.assertEqual(app.radio(key='render_scope').value,'Full design')
+        rows=next(table.value for table in app.dataframe if 'X (mm)' in table.value.columns)
+        self.assertEqual(len(rows),3)
+        self.assertFalse(app.exception,[x.message for x in app.exception])
+
 if __name__=='__main__':unittest.main()
