@@ -28,7 +28,8 @@ def render_designer(layout,rows):
     st.download_button('Export 2D design and approval JSON',json.dumps({'schema_version':1,'layout':layout,'units':rows,'approval':lock},indent=2,allow_nan=False),'kitchen_design_2d.json','application/json')
     selected=st.session_state.get('_designer_selected')
     if selected is not None and not 0<=selected<len(rows):selected=None
-    from unit_library import LIBRARY
+    from workshop_defaults import catalogue_for_settings
+    LIBRARY=catalogue_for_settings(st.session_state)
     st.caption(f'{len(LIBRARY)} cabinet types available · {len(valid)} of {len(rows)} placed units visible. Add buttons create another unit; they do not replace the selected unit.')
     if not valid and not lock:st.info('No draggable units yet. Drag a cabinet from the library below into the room, or click its Add button.')
     from designer_geometry import unit_polygons
@@ -40,7 +41,7 @@ def render_designer(layout,rows):
             index=event.get('index')
             if event.get('revision')!=revision:raise ValueError('The canvas changed. Please select the unit again.')
             if event.get('action')=='add':
-                updated=apply_event(rows,layout,event,lock,snapping)
+                updated=apply_event(rows,layout,event,lock,snapping,LIBRARY)
                 st.session_state['_designer_selected']=len(updated)-1
                 from layout_ui import commit_scene
                 commit_scene(updated)
@@ -48,7 +49,7 @@ def render_designer(layout,rows):
             st.session_state['_designer_selected']=index
             st.session_state['unit_pick_'+revision[:12]]=index
             if event.get('action')!='select':
-                updated=apply_event(rows,layout,event,lock,snapping)
+                updated=apply_event(rows,layout,event,lock,snapping,LIBRARY)
                 if event.get('action')=='delete':st.session_state['_designer_selected']=None
                 from layout_ui import commit_scene
                 commit_scene(updated)

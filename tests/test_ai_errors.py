@@ -24,4 +24,16 @@ class AIErrorsTests(unittest.TestCase):
         proposal=validate_proposal({'answer':'Review','units':[{'type':'Single door base','wall':None,'x':None}]})
         self.assertNotIn('wall',proposal['units'][0]);self.assertNotIn('x',proposal['units'][0])
 
+    def test_expert_brief_and_active_construction_settings_reach_model(self):
+        import json
+        with patch('design_assistant.requests.post') as post:
+            post.return_value.ok=True
+            post.return_value.json.return_value={'choices':[{'message':{'content':'{"answer":"Review this layout","units":[]}'}}]}
+            result=ask_ai('Plan my kitchen',{'length':3000,'width':3000,'height':2400},[],[],'fake',{'style':'Luxury contemporary','budget_zar':100000,'construction_settings':{'job_height':740,'job_depth':550}})
+            self.assertEqual(result['units'],[])
+            payload=post.call_args.kwargs['json'];context=json.loads(payload['messages'][1]['content'].split('\nCustomer request:')[0])
+            self.assertEqual(context['design_brief']['style'],'Luxury contemporary')
+            self.assertEqual(context['library']['Single door base']['height'],740)
+            self.assertIn('circulation',payload['messages'][0]['content'])
+
 if __name__=='__main__':unittest.main()

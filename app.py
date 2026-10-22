@@ -63,6 +63,8 @@ with brand_title:
     st.title('Moms Kitchens and Projects')
     st.caption('Design • Renovate • Build | Kitchen design, costing and cutting lists')
 render_saved_jobs()
+from workshop_defaults_ui import render_workshop_defaults,render_save_workshop
+render_workshop_defaults()
 render_supplier_uploads()
 from materials_ui import render_material_library
 render_material_library()
@@ -111,8 +113,12 @@ with left:
     depth = st.number_input('Panel depth (mm), excluding door and back', min_value=1.0, value=500.0, step=1.0, key='job_depth')
     st.caption('Rear-fixed Masonite back: 3 mm. Overall depth before doors = panel depth + 3 mm.')
     shelves = st.number_input('Internal shelves per cabinet', min_value=0, max_value=20, value=1, step=1, key='job_shelves')
-    clearance = st.number_input('Total shelf width clearance (mm)', min_value=0.0, value=0.0, step=0.5, key='job_clearance')
-    st.caption('Clearance is subtracted once from shelf width only. Dimensions are panel cut sizes before any edging adjustment. Grain direction requires workshop review.')
+    clearance = st.number_input('Extra shelf fitting gap (mm) — normally 0', min_value=0.0, value=0.0, step=0.5, key='job_clearance')
+    st.caption(f'Both sides are deducted automatically: {width:g} − {thickness:g} − {thickness:g} = {width-2*thickness:g} mm internal width. Shelf finished width before edging: {width-2*thickness:g} − {clearance:g} extra gap = {width-2*thickness-clearance:g} mm. Do not enter the side thickness here.')
+    if clearance==2*thickness:
+        st.warning(f'The {2*thickness:g} mm side deduction is already included. Entering {clearance:g} here subtracts it again. Use 0 unless you intentionally need that much additional fitting space.')
+        def clear_extra_gap():st.session_state['job_clearance']=0.
+        st.button('Set extra shelf gap to 0 mm',key='clear_duplicate_clearance',on_click=clear_extra_gap)
     carcass_edging = st.selectbox('Carcass edging thickness (mm)', [1, 2], key='job_carcass_edging')
     st.caption('Sides: 1 long + 1 short edge. Shelves: 1 long edge. Bases: none. Rails: 1 long edge. Long means the longer finished dimension.')
     st.subheader('Single door')
@@ -149,6 +155,7 @@ with right:
     if material == 'Solid wood':
         st.caption('Solid wood currently uses a finished-panel price per m² at the chosen thickness. Rough timber volume, machining loss, and board selection need a later costing model.')
 
+render_save_workshop()
 design_views=render_views(width,height,depth,thickness,shelves,clearance,door_thickness,hinges_per_door,room_layout)
 
 uploaded_items, invalid_accessories = supplier_accessories()
@@ -301,6 +308,7 @@ snapshot = dict(
     plan_import=st.session_state.get('_job_plan_import'),
     plan_pending_units=st.session_state.get('_job_import_units',[]),
     layout=room_layout,
+    workshop_defaults=st.session_state.get('_job_workshop_defaults'),
     default_prices=st.session_state.get('_job_default_prices'),
     design_lock=st.session_state.get('_design_lock'),
     design_views=design_views,

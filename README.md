@@ -1,5 +1,35 @@
 # Kitchen Workshop
 
+## Workshop standards and design prompts
+
+**Workshop construction defaults — set once** stores the normal board/material,
+base dimensions, shelves, optional extra shelf gap, edging, door choices and hinge
+settings. Set the cabinet controls once and click **Save current construction as
+workshop defaults**. New jobs inherit a frozen settings snapshot; saved jobs remain
+unchanged. **Use latest workshop defaults for this job** is explicit and disabled
+for locked layouts. Defaults and backup/restore live in `data/workshop_defaults.json`,
+separately from customer data and shared prices. Customer details, room geometry,
+quantities and prices are never copied into construction defaults.
+
+Both sides are always deducted by board thickness: a 600 mm unit in 16 mm board
+has 568 mm internal/shelf width before extra fitting gap and edging. **Extra shelf
+fitting gap — normally 0** is additional clearance, never the side deduction. At
+32 mm the app warns that the side deduction has been counted twice and offers
+an explicit reset to zero; it does not silently change an existing quote. Standard
+base height/depth and shelf preferences also seed library/palette placements. Tall
+and wall units retain their category-specific dimensions; corner bases follow base
+height and retain their own depth.
+
+The AI assistant accepts a **Kitchen design prompt**, an example prompt and optional
+brief fields for style, layout, budget, appliances and storage needs. It receives the
+measured room, openings, walls, existing units, active construction settings, material
+catalogue and known price context. Instructions emphasise functional zoning,
+circulation, appliance clearances, practical library dimensions, stated assumptions
+and human review. The brief is saved per job. It proposes supported units/placements;
+it does not certify architectural compliance, perform complete production costing
+or alter locked layouts. Live requests still need valid OpenAI API credit and limits;
+a prompt upgrade does not remove an HTTP 429 billing/rate-limit issue.
+
 ## Walls, material library and custom worktops
 
 Prepare the measured room and specify **Room height** and wall thickness. Expand

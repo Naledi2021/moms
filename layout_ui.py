@@ -216,8 +216,8 @@ def render_scene_editor(layout,width,height,depth):
         st.caption(spec['description'])
         a,b,c=st.columns(3)
         w=a.number_input('Library width (mm)',min_value=150.0,max_value=2400.0,value=float(spec['width']),step=50.0,key='library_width_'+selected,disabled=locked)
-        h=b.number_input('Library height (mm)',min_value=200.0,max_value=2400.0,value=float(spec['height']),step=10.0,key='library_height_'+category,disabled=locked)
-        d=c.number_input('Library depth (mm)',min_value=200.0,max_value=1200.0,value=float(spec['depth']),step=10.0,key='library_depth_'+category,disabled=locked)
+        h=b.number_input('Library height (mm)',min_value=200.0,max_value=2400.0,value=float(height if category in ('Base','Corner') else spec['height']),step=10.0,key='library_height_'+category,disabled=locked)
+        d=c.number_input('Library depth (mm)',min_value=200.0,max_value=1200.0,value=float(depth if category=='Base' else spec['depth']),step=10.0,key='library_depth_'+category,disabled=locked)
         elevation=st.number_input('Library elevation above floor (mm)',min_value=0.0,value=float(spec['elevation']),step=1.0,key='library_elevation_'+category,disabled=locked)
         from rendering import sketch_svg
         try:
@@ -228,7 +228,9 @@ def render_scene_editor(layout,width,height,depth):
         if st.button('Add library unit',key='add_library_unit',disabled=locked):
             try:
                 if len(current)>=30:raise ValueError('Use at most 30 units.')
-                commit_scene(current+[library_row(selected,w,h,d,current,layout,elevation)])
+                row=library_row(selected,w,h,d,current,layout,elevation)
+                if category=='Base' and spec['shelves']>0:row['Shelves']=int(st.session_state.get('job_shelves',spec['shelves']))
+                commit_scene(current+[row])
             except ValueError as error:st.error(str(error))
     template=st.selectbox('Other design item',['Kitchen','Wardrobe','TV unit','Custom'],key='design_template',disabled=locked)
     pending=st.session_state.get('_job_import_units',[])

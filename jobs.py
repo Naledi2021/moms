@@ -11,7 +11,7 @@ JOB_KEYS = {'job_name','customer_name','customer_phone','customer_email','custom
  'job_material','job_thickness','job_units','job_width','job_height','job_depth','job_shelves','job_clearance',
  'job_carcass_edging','job_door_material','job_door_thickness','job_door_edging','job_door_edges',
  'job_waste','job_hinge_brand','job_hinges_per_door','plates_included','job_hardware','job_labour','job_transport','job_markup','job_tax',
- 'uploaded_accessories'}
+ 'uploaded_accessories','assistant_style','assistant_layout','assistant_budget','assistant_needs','assistant_prompt'}
 PREFIXES = ('carcass_supplier_', 'back_supplier_', 'door_supplier_', 'hinge_price_', 'plate_price_', 'uploaded_qty_', 'render_', 'design_')
 
 def is_job_key(key):
@@ -55,10 +55,11 @@ def save_job(name, state, snapshot, pdf, cutting_csv, job_id=None, path=None):
 
 def restore_revision(state, job_id, revision):
     for key in list(state):
-        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event') or key.startswith('_default_profile_'):
+        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
             del state[key]
     for key,value in revision['state'].items():
         if is_job_key(key): state[key]=value
+    state['_job_workshop_defaults']=revision['snapshot'].get('workshop_defaults') or {'settings':{}}
     state['_job_default_prices']=revision['snapshot'].get('default_prices') or {'version':1,'updated_utc':None,'prices':{}}
     state['_design_lock']=revision['snapshot'].get('design_lock')
     state['_active_job_id']=job_id
@@ -74,7 +75,7 @@ def restore_revision(state, job_id, revision):
 
 def clear_job(state):
     for key in list(state):
-        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event') or key.startswith('_default_profile_'):
+        if is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
             del state[key]
 
 
