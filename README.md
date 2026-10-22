@@ -30,9 +30,47 @@ it does not certify architectural compliance, perform complete production costin
 or alter locked layouts. Live requests still need valid OpenAI API credit and limits;
 a prompt upgrade does not remove an HTTP 429 billing/rate-limit issue.
 
+## Finishes and fixtures catalogue
+
+Open **Materials and fixtures library** to create or edit lighting, sinks, taps,
+tiles, paint colours, splashbacks, appliances, extractors, glass, handles and
+accessories, alongside boards/fronts/worktops. Filter by category. Each record holds
+colour, finish, supplier, optional SKU/notes, dimensions in mm and optional R/item
+and R/m² prices excluding VAT. **Add illustrative starter products** creates unpriced
+editable templates without overwriting existing records with the same IDs. These
+are not verified supplier products. Paint prices must be converted to coverage
+R/m² externally; litres/pack sizes are not calculated.
+
+After confirming the room, open **Place library finishes, fixtures and appliances**
+in the 2D designer. Enter X, Y and elevation, then place the item; use existing
+selection/movement/rotation/deletion controls. Existing board records need product
+dimensions saved before they can be placed as separate items. Fixtures use labelled
+solid envelopes and surfaces use panels. Colours appear in existing previews;
+manufacturer models, glass transparency, lighting simulation, floor/wall texture
+mapping, automatic sink cut-outs and service connections are not implemented.
+Intentional solid-envelope intersections still produce collision warnings. All
+items share the existing 30-item scene limit. Cabinet quotations do not include
+these product prices or purchased surface quantities.
+
+Product details are copied into the design revision, preserving saved designs
+when the shared catalogue changes. Approved layouts prevent placement/movement.
+Download/restore the **material library backup** separately from customer-job backups;
+it includes all fixture categories. Local free-hosting files remain ephemeral.
+
 ## Walls, material library and custom worktops
 
-Prepare the measured room and specify **Room height** and wall thickness. Expand
+Prepare the measured room and specify **Room height** and wall thickness.
+Use **Add room features → Wall / Window / Door** for simple measured additions.
+A wall uses a start point, length, direction and thickness. Windows/doors use an
+outer wall, offset, opening length and height; windows also have a sill height.
+Every addition is validated and requires room confirmation again.
+
+Walls are **locked by default**, including legacy walls with no lock field. In the
+wall table, untick **Locked** to enable the exact-coordinate controls and canvas
+movement. Use **Move unlocked walls** to drag the segment, or an orange endpoint
+to reshape it. Re-tick Locked when finished. Approved designs block all changes.
+Coordinates are read-only in the table; use the unlocked detail form for changes.
+ Expand
 **Draw walls and edit wall measurements**, click two points to draw a partition or
 return (10 mm click grid), and refine its endpoints/thickness in the wall table.
 Deleting a row removes a wall. Changing walls invalidates room confirmation. The

@@ -12,6 +12,9 @@ def render_designer(layout,rows):
     st.subheader('Interactive 2D floor plan')
     lock=st.session_state.get('_design_lock')
     if lock:layout=lock['layout'];rows=lock['rows']
+    if layout.get('walls'):st.caption('To move walls, open Prepare the room layout → Draw walls and edit wall measurements, then unlock the wall.')
+    from catalogue_placement_ui import render_product_placement
+    render_product_placement(layout,rows,lock)
     warnings=collision_warnings(rows,layout)
     for warning in warnings:st.warning(warning)
     st.caption('Drag units; select and rotate or delete with the canvas buttons. Use the precise editor for millimetres, elevation and wall offsets. Door zones reserve up to 1 m inward; windows use a 100 mm wall strip and their actual elevation. These are clearance warnings, not a door-swing simulation.')

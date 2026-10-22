@@ -76,6 +76,8 @@ def render_room_layout():
     width=b.number_input('Room depth — y (mm)',min_value=500.0,value=3000.0,step=10.0,key='design_room_width')
     height=c.number_input('Room height (mm)',min_value=1000.0,value=2400.0,step=10.0,key='design_room_height')
     wall_thickness=st.number_input('Room wall thickness (mm)',min_value=20.,max_value=500.,value=110.,step=1.,key='design_wall_thickness')
+    from room_actions_ui import render_add_room_feature
+    render_add_room_feature(dict(length=length,width=width,height=height,wall_thickness=wall_thickness))
     defaults=st.session_state.get('_job_room_openings',[])
     openings=st.data_editor(pd.DataFrame(defaults,columns=OPENING_COLUMNS),num_rows='dynamic',hide_index=True,key='design_openings_editor',column_config={
         'Type':st.column_config.SelectboxColumn(options=['Door','Window'],required=True),

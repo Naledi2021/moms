@@ -12,6 +12,7 @@ def wall_box(wall,height):
 def validate_walls(walls,layout):
     if not isinstance(walls,list) or len(walls)>40:raise ValueError('Use at most 40 drawn wall segments.')
     for wall in walls:
+        if 'Locked' in wall and not isinstance(wall['Locked'],bool):raise ValueError('Wall lock must be true or false.')
         if not isinstance(wall.get('Name'),str) or not wall['Name'].strip():raise ValueError('Name each wall.')
         values=[float(wall[k]) for k in WALL_COLUMNS[1:]]
         if not all(math.isfinite(v) for v in values):raise ValueError('Wall measurements must be finite.')

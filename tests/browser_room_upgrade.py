@@ -12,6 +12,7 @@ async def main():
   iframe=page.locator('iframe[src*="mkp_designer2d"]').first
   await iframe.wait_for();frame=await (await iframe.element_handle()).content_frame()
   await frame.wait_for_function('args && args.mode==="walls"')
+  await frame.get_by_role('button',name='Draw wall',exact=True).click()
   await frame.locator('#plan').scroll_into_view_if_needed()
   for x,y in ((2500,1000),(2500,2000)):
    point=await frame.evaluate('([x,y])=>{let p=svg.createSVGPoint();p.x=x;p.y=y;let q=p.matrixTransform(svg.getScreenCTM());return {x:q.x,y:q.y}}',[x,y])

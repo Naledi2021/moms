@@ -7,7 +7,9 @@ import re
 import uuid
 
 STORE=Path(__file__).with_name('data')/'materials.json'
-CATEGORIES=('Carcass','Front','Worktop')
+SURFACES=('Carcass','Front','Worktop','Tiles','Paint','Splashback','Glass')
+FIXTURES=('Lighting','Sink','Tap','Appliance','Extractor','Handle','Accessory')
+CATEGORIES=(*SURFACES,*FIXTURES)
 
 def starter_materials():
     return [dict(id='sample-white',name='Sample white melamine',category='Carcass',thickness_mm=18,color='#eeeae2',finish='Matte',supplier='',price_m2=None),
@@ -23,6 +25,11 @@ def validate_material(record):
     if record.get('finish') not in ('Matte','Gloss','Wood grain'):raise ValueError('Choose a supported finish.')
     if price is not None and (not math.isfinite(float(price)) or float(price)<0):raise ValueError('Material price must be nonnegative and finite.')
     if not isinstance(record.get('supplier',''),str) or len(record.get('supplier',''))>150:raise ValueError('Supplier name is too long.')
+    for key in ('width_mm','height_mm','depth_mm'):
+        if key in record and (not math.isfinite(float(record[key])) or not 0<float(record[key])<=20000):raise ValueError('Product dimensions must be positive and at most 20,000 mm.')
+    if record.get('price_each') is not None and (not math.isfinite(float(record['price_each'])) or float(record['price_each'])<0):raise ValueError('Item price must be nonnegative and finite.')
+    for key in ('sku','notes'):
+        if not isinstance(record.get(key,''),str) or len(record.get(key,''))>1000:raise ValueError('Product reference or notes are too long.')
     return record
 
 def load_materials(path=None):
@@ -72,3 +79,16 @@ def restore_material_library(raw,path=None):
         merged.update({r['id']:r for r in records})
         if len(merged)>500:raise ValueError('Use at most 500 materials.')
         tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps({'version':1,'materials':list(merged.values())},indent=2,allow_nan=False));tmp.replace(path)
+
+
+def starter_products():
+    """Unpriced presentation templates, not manufacturer specifications."""
+    sizes={'Tiles':(600,600,10),'Paint':(1000,1000,1),'Splashback':(1200,600,6),
+           'Glass':(600,720,6),'Lighting':(300,80,300),'Sink':(800,180,500),
+           'Tap':(180,350,60),'Appliance':(600,850,600),'Extractor':(900,400,500),
+           'Handle':(160,20,30),'Accessory':(300,300,300)}
+    return [dict(id='template-'+category.lower(),name='Sample '+category.lower()+' — edit before use',
+                 category=category,thickness_mm=min(d,18),color='#c9ced2',finish='Matte',supplier='',
+                 price_m2=None,price_each=None,width_mm=w,height_mm=h,depth_mm=d,sku='',
+                 notes='Illustrative envelope only. Replace dimensions and specifications with verified product data.')
+            for category,(w,h,d) in sizes.items()]
