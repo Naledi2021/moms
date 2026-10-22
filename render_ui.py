@@ -32,6 +32,9 @@ def render_views(width,height,depth,thickness,shelves,clearance,door_thickness,h
             st.info(f'Previewing {len(valid)} of {len(rows)} units.')
             if not boxes:raise ValueError('Add a unit from the library, or complete the highlighted rows to preview the design.')
         else:boxes=cabinet_geometry(width,height,depth,thickness,shelves,clearance,door_thickness,opened)
+        if scope=='Full design' and st.checkbox('Show room walls in preview',key='render_room_walls'):
+            from room_geometry import room_wall_boxes
+            boxes=room_wall_boxes(layout)+boxes
         lines=floor_plan_svg(layout,rows) if scope=='Full design' else technical_svg(width,height,depth,thickness,shelves,door_thickness)
         sketch=sketch_svg(boxes)
     except ValueError as error:

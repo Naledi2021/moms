@@ -18,6 +18,15 @@ def footprint(row):
     return [(x+u*c-v*s,y+u*s+v*c) for u,v in ((0,0),(w,0),(w,d),(0,d))]
 
 
+def unit_polygons(row):
+    if row.get('Type')!='Worktop':return [footprint(row)]
+    from materials import details
+    from room_geometry import worktop_rectangles
+    rectangles=worktop_rectangles(float(row['Width (mm)']),float(row['Depth (mm)']),details(row).get('worktop',{}))
+    a=math.radians(float(row['Rotation (deg)']));c,s=math.cos(a),math.sin(a);x,y=float(row['X (mm)']),float(row['Y (mm)'])
+    return [[(x+u*c-v*s,y+u*s+v*c) for u,v in ((l,t),(r,t),(r,b),(l,b))] for l,t,r,b in rectangles]
+
+
 def bounds(row):
     p=footprint(row)
     return min(x for x,y in p),min(y for x,y in p),max(x for x,y in p),max(y for x,y in p)
@@ -49,6 +58,7 @@ def validate_unit(row,layout):
     if min(w,h,d)<=0 or z<0 or z+h>layout['height'] or s<0 or s>20 or not s.is_integer():raise ValueError('Unit dimensions, elevation or shelf count are invalid.')
     left,top,right,bottom=bounds(row)
     if left<-.01 or top<-.01 or right>layout['length']+.01 or bottom>layout['width']+.01:raise ValueError('Unit footprint is outside the room.')
+    unit_polygons(row)
     return row
 
 
@@ -70,11 +80,15 @@ def collision_warnings(rows,layout):
         except ValueError as error:messages.append(f'Row {i+1}: {error}')
     for n,(i,a) in enumerate(valid):
         for j,b in valid[n+1:]:
-            if vertical_overlap(a,b) and intersects(footprint(a),footprint(b)):
+            if vertical_overlap(a,b) and any(intersects(pa,pb) for pa in unit_polygons(a) for pb in unit_polygons(b)):
                 messages.append(f'{a["Name"]} overlaps {b["Name"]}.')
+        from room_geometry import wall_box
+        for wall in layout.get('walls',[]):
+            poly=[tuple(p[:2]) for p in wall_box(wall,layout['height']).vertices()[:4]]
+            if any(intersects(part,poly) for part in unit_polygons(a)):messages.append(f'{a["Name"]} overlaps drawn wall {wall["Name"]}.')
         for opening in layout['openings']:
             zone={'Z (mm)':opening['Sill (mm)'],'Height (mm)':opening['Height (mm)']}
-            if vertical_overlap(a,zone) and intersects(footprint(a),opening_zone(opening,layout)):
+            if vertical_overlap(a,zone) and any(intersects(poly,opening_zone(opening,layout)) for poly in unit_polygons(a)):
                 messages.append(f'{a["Name"]} conflicts with a {opening["Type"].lower()} on the {opening["Wall"].lower()} wall.')
     return messages
 
@@ -172,12 +186,22 @@ def floor_plan_svg(layout,rows):
         else:a,b,c,d=0 if wall=='Left' else L,off,0 if wall=='Left' else L,off+span
         color='#ed9433' if opening['Type']=='Door' else '#258fca'
         parts.append(f'<path d="M {a} {b} L {c} {d}" stroke="{color}" stroke-width="25"/>')
+    from room_geometry import wall_box
+    for wall in layout.get('walls',[]):
+        wall_points=wall_box(wall,layout['height']).vertices()[:4,:2]
+        coords=' '.join(f'{x:g},{y:g}' for x,y in wall_points)
+        parts.append(f'<polygon points="{coords}" fill="#8c9197"/>')
     for row in rows:
         try:validate_unit(row,layout)
         except ValueError:continue
         p=footprint(row);points=' '.join(f'{x:.6f},{y:.6f}' for x,y in p);x=sum(v[0] for v in p)/4;y=sum(v[1] for v in p)/4
         color='#d7e7f5' if float(row['Z (mm)'])>0 else '#d5dfd4'
-        parts.append(f'<polygon points="{points}" fill="{color}" fill-opacity=".7" stroke="#385b74" stroke-width="6"/>')
+        from materials import details
+        materials=details(row).get('materials',{})
+        color=materials.get('Worktop' if row.get('Type')=='Worktop' else 'Front',{}).get('color',color)
+        for poly in unit_polygons(row):
+            points=' '.join(f'{px:.6f},{py:.6f}' for px,py in poly)
+            parts.append(f'<polygon points="{points}" fill="{color}" fill-opacity=".7" stroke="#385b74" stroke-width="6"/>')
         label=escape(f'{row["Name"]}: {float(row["Width (mm)"]):g} × {float(row["Depth (mm)"]):g} mm; z={float(row["Z (mm)"]):g}')
         parts.append(f'<text x="{x}" y="{y}" text-anchor="middle" font-family="sans-serif" font-size="{font*.6}">{label}</text>')
     parts.append('</svg>')

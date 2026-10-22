@@ -9,7 +9,7 @@ async def main():
   await page.goto(os.environ.get('MKP_TEST_URL','http://127.0.0.1:8506'),wait_until='networkidle')
   await page.get_by_role('button',name='Confirm room layout',exact=True).click()
   await page.get_by_role('button',name='Add library unit',exact=True).wait_for()
-  iframe=page.locator('iframe[src*="mkp_designer2d"]')
+  iframe=page.locator('iframe[src*="mkp_designer2d"]').last
   await iframe.wait_for()
   frame=await (await iframe.element_handle()).content_frame()
   await frame.wait_for_function('args && args.units.length===0')

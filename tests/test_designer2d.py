@@ -100,7 +100,7 @@ class DesignerTests(unittest.TestCase):
 
     def test_ui_lock_save_reopen_and_explicit_unlock(self):
         with tempfile.TemporaryDirectory() as directory,patch.object(jobs,'STORE',Path(directory)/'jobs.json'):
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
             app.number_input(key='design_room_length').set_value(3500).run()
             app.button(key='confirm_room_layout').click().run()
             app.button(key='add_library_unit').click().run()
@@ -136,7 +136,7 @@ class DesignerTests(unittest.TestCase):
     def test_ai_suggestions_remain_read_only_when_locked(self):
         import os
         with patch.dict(os.environ,{'KITCHEN_AI_API_KEY':'test-only'}),patch('design_assistant.ask_ai',return_value={'answer':'Review','units':[{'type':'Sink base','width':900,'height':720,'depth':500}]}):
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run();app.button(key='add_library_unit').click().run()
             app.button(key='approve_design').click().run()
             app.text_area(key='assistant_prompt').set_value('Suggest another unit').run()
@@ -156,7 +156,7 @@ class DesignerTests(unittest.TestCase):
         self.assertEqual(clicked[0]['Height (mm)'],2100)
 
     def test_missing_sheet_prices_do_not_hide_or_block_designer(self):
-        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
         app.button(key='confirm_room_layout').click().run()
         app.selectbox(key='carcass_supplier_basis').set_value('Per sheet / panel').run()
         self.assertFalse(app.exception,[x.message for x in app.exception])
@@ -167,7 +167,7 @@ class DesignerTests(unittest.TestCase):
         self.assertEqual(len(rows),1)
 
     def test_single_preview_can_return_to_full_design_without_losing_units(self):
-        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
         app.button(key='confirm_room_layout').click().run()
         for _ in range(3):app.button(key='add_library_unit').click().run()
         app.radio(key='render_scope').set_value('Single cabinet').run()

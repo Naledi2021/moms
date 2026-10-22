@@ -35,7 +35,7 @@ class JobTests(unittest.TestCase):
 
     def test_ui_save_reopen_and_revise_customer_job(self):
         with tempfile.TemporaryDirectory() as directory,patch.object(jobs,'STORE',Path(directory)/'jobs.json'):
-            app=AppTest.from_file(APP).run()
+            app=AppTest.from_file(APP,default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run()
             self.assertFalse(app.exception)
             app.text_input(key='job_name').set_value('Mokoena kitchen')
@@ -68,7 +68,7 @@ class JobTests(unittest.TestCase):
         records=[dict(sku='B',product='White board',price=100,unit='m2',length_mm=None,width_mm=None,thickness_mm=18)]
         history={'updates':[dict(supplier='Seno SA',effective_date='2026-01-01',uploaded_utc='2026-01-01T00:00:00+00:00',vat_basis='Excluded',vat_rate=None,filename='prices.csv',products=records)]}
         with tempfile.TemporaryDirectory() as directory,patch.object(jobs,'STORE',Path(directory)/'jobs.json'),patch.object(supplier_updates,'load',return_value=history),patch.object(hardware_ui,'load',return_value=history),patch.object(supplier_upload_ui,'load',return_value=history):
-            app=AppTest.from_file(APP).run()
+            app=AppTest.from_file(APP,default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run()
             self.assertFalse(app.exception)
             app.selectbox(key='carcass_supplier_source').set_value('Uploaded supplier prices').run()

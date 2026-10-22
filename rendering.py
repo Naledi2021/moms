@@ -13,6 +13,7 @@ class Box:
     kind: str='carcass'
     angle: float=0
     colour: str | None=None
+    finish: str | None=None
 
     def vertices(self):
         x,y,z=self.origin; a,b,c=self.size
@@ -121,7 +122,8 @@ def interactive_figure(boxes,carcass_colour='#eeeae2',door_colour='#b88a55',ultr
     traces=[]
     colours={'carcass':carcass_colour,'door':door_colour,'back':'#bfa27b','metal':'#aab3bd','appliance':'#7a8791','panel':door_colour,'floor':'#d9d2c3','wall':'#eeeae2'}
     for box in boxes:
-        traces.append(mesh(box,box.colour or colours[box.kind],ultra,finish))
+        traces.append(mesh(box,box.colour or colours[box.kind],ultra,box.finish or finish))
+        if box.kind=='wall':traces[-1].opacity=.25
         if not ultra:
             p=box.vertices();coords=[]
             for a,b in EDGES:coords.extend([p[a],p[b],[None,None,None]])

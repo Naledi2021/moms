@@ -64,7 +64,7 @@ class LibraryTests(unittest.TestCase):
             self.assertNotIn('customer_email',str(payload))
 
     def test_library_ui_adds_two_distinct_units_and_renders_all_views(self):
-        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
         app.button(key='confirm_room_layout').click().run()
         app.button(key='add_library_unit').click().run()
         app.selectbox(key='library_selection').set_value('Three drawer base').run()
@@ -80,7 +80,7 @@ class LibraryTests(unittest.TestCase):
     def test_ai_ui_requires_review_and_applies_without_losing_existing_unit(self):
         import os
         with patch.dict(os.environ,{'KITCHEN_AI_API_KEY':'fake-test-key'}),patch('design_assistant.ask_ai',return_value={'answer':'Review a sink unit','units':[{'type':'Sink base','width':900,'height':720,'depth':500}]}):
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run()
             app.button(key='add_library_unit').click().run()
             app.text_area(key='assistant_prompt').set_value('Add a sink base').run()

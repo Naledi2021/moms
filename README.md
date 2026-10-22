@@ -1,5 +1,46 @@
 # Kitchen Workshop
 
+## Walls, material library and custom worktops
+
+Prepare the measured room and specify **Room height** and wall thickness. Expand
+**Draw walls and edit wall measurements**, click two points to draw a partition or
+return (10 mm click grid), and refine its endpoints/thickness in the wall table.
+Deleting a row removes a wall. Changing walls invalidates room confirmation. The
+outer room remains a rectangle; drawn segments do not define an arbitrary enclosed
+polygon. Doors/windows still belong to the four named outer walls. Partitions have
+room height and support angled centre lines; their geometry triggers cabinet and
+worktop collision warnings. Outer walls are modelled outside the clear room, with
+real door/window openings. **Show room walls in preview** adds translucent walls
+to 3D/Ultra and wall geometry to sketch/video. Wall drawing is disabled while locked.
+
+Open **Material library — boards, fronts and worktops** to add or edit materials:
+name, category, thickness, colour, Matte/Gloss/Wood grain finish, supplier/range and
+optional R/m² price excluding VAT. Starter samples are illustrative and unpriced.
+The library is shared, stored atomically in `data/materials.json`, and supports
+backup/restore. Select a unit and use **Unit materials and custom worktop** to assign
+separate carcass/front finishes, or a worktop material. Assignments embed the full
+material record in that unit, so changing a library entry never reprices/recolours
+saved designs. Finish selection does not change construction dimensions or the
+base-unit quote automatically. Existing standalone pricing defaults are preserved.
+
+Click **Add custom worktop** for a separately sized/elevated top. Select it, edit its
+overall width/depth and thickness (Height) in the precise editor, then choose
+Rectangle, L shape, U shape or Custom sections. **Load worktop starting shape** sets
+up sections; the editable local-coordinate section and cut-out tables allow custom
+rectilinear designs. **Apply custom worktop sections and cut-outs** validates them.
+Overlapping sections are unioned, cut-outs must lie within the solid worktop and
+area is not double-counted. Plan, 3D and video use disjoint solid pieces, so corners
+and rectangular sink/hob holes remain empty. Rotation and placement still use the
+unit envelope. The material-area amount shown excludes waste, slab purchasing,
+seams, fabrication, edge profiles, installation and VAT; it is not added to the
+base-cabinet quotation. Curved/polygonal tops, bevels, mitres, slab nesting and
+fabrication templates are future work.
+
+Room walls, worktop details and assigned material records are included in existing
+saved job revisions, approval locks, JSON exports and plan SVGs. The extra hidden
+unit-details column defaults to empty for old jobs; no migration is required. On
+free hosting, export job histories and the material library before redeployments.
+
 ## Shared default prices for all customer jobs
 
 Open **Shared default prices — all customers** to edit existing business defaults,
@@ -88,7 +129,9 @@ conflicting revisions are rejected and identical imports do nothing. The separat
 2D-only scene export does not support re-import in this milestone. Free Streamlit storage is still temporary: export important history and
 supplier prices before a redeployment.
 
-Validation: `python -m unittest discover -s tests -v`. Browser checks require
+Validation: `python -m unittest discover -s tests -v`. AppTest UI runs allow 10 seconds
+per rerun for the expanded editor on shared cloud CPUs; all assertions remain enabled.
+Browser checks require
 Playwright plus Chromium and run against a separately started local app; those
 are development-only tools. The component uses the standard Streamlit message
 protocol and supported iframe bridge. Streamlit reruns on completed edits, so it

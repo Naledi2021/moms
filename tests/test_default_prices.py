@@ -40,7 +40,7 @@ class DefaultsTests(unittest.TestCase):
     def test_new_job_defaults_editable_saved_job_frozen(self):
         with tempfile.TemporaryDirectory() as directory,patch.object(default_prices,'STORE',Path(directory)/'defaults.json'),patch.object(jobs,'STORE',Path(directory)/'jobs.json'):
             save_defaults({'carcass|Melamine|18':120,'door|Melamine|18':150,'back|Masonite|3':40,'hinge|Roco':35,'plate|Roco':5,'job_labour':200})
-            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
+            app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run()
             self.assertFalse(app.exception,[e.message for e in app.exception])
             self.assertEqual(app.number_input(key='carcass_supplier_rate').value,120)

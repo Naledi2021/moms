@@ -31,6 +31,8 @@ def render_designer(layout,rows):
     from unit_library import LIBRARY
     st.caption(f'{len(LIBRARY)} cabinet types available · {len(valid)} of {len(rows)} placed units visible. Add buttons create another unit; they do not replace the selected unit.')
     if not valid and not lock:st.info('No draggable units yet. Drag a cabinet from the library below into the room, or click its Add button.')
+    from designer_geometry import unit_polygons
+    valid=[dict(unit,polygons=unit_polygons(unit['row'])) for unit in valid]
     event=_canvas(layout=layout,units=valid,library=LIBRARY,selected=selected,revision=revision,locked=bool(lock),ack=st.session_state.get('_designer_event'),default=None,key='designer_canvas')
     if event and isinstance(event,dict) and event.get('id')!=st.session_state.get('_designer_event'):
         st.session_state['_designer_event']=event.get('id')
@@ -61,6 +63,8 @@ def render_designer(layout,rows):
         st.session_state['_designer_selected']=chosen
         st.rerun()
     row=rows[chosen]
+    from unit_finishes_ui import render_unit_finishes
+    render_unit_finishes(layout,rows,chosen,lock)
     # Invalid rows remain repairable in the placement table.
     try:
         numbers={k:float(row[k]) for k in ('Width (mm)','Height (mm)','Depth (mm)','X (mm)','Y (mm)','Z (mm)','Rotation (deg)')}

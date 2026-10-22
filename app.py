@@ -64,6 +64,8 @@ with brand_title:
     st.caption('Design • Renovate • Build | Kitchen design, costing and cutting lists')
 render_saved_jobs()
 render_supplier_uploads()
+from materials_ui import render_material_library
+render_material_library()
 from default_prices_ui import render_shared_defaults,save_current_defaults
 render_shared_defaults()
 render_plan_import()

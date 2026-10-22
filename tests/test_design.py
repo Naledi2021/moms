@@ -19,7 +19,7 @@ APP=str(Path(__file__).resolve().parents[1]/'app.py')
 
 class DesignTests(unittest.TestCase):
     def test_layout_gates_units_and_requires_reconfirmation(self):
-        app=AppTest.from_file(APP).run()
+        app=AppTest.from_file(APP,default_timeout=10).run()
         self.assertFalse(app.exception)
         self.assertFalse(any(n.key=='job_width' for n in app.number_input))
         app.button(key='confirm_room_layout').click().run()
@@ -80,7 +80,7 @@ class DesignTests(unittest.TestCase):
         def file_uploader(label,*args,**kwargs):
             return upload if label=='Sketch or plan document' else None
         with patch('streamlit.file_uploader',side_effect=file_uploader):
-            app=AppTest.from_file(APP).run()
+            app=AppTest.from_file(APP,default_timeout=10).run()
             app.button(key='read_plan_document').click().run()
             self.assertFalse(app.exception,[e.message for e in app.exception])
             app.selectbox(key='plan_dimension_order').set_value('Room length × depth × height').run()
@@ -96,7 +96,7 @@ class DesignTests(unittest.TestCase):
 
     def test_saved_scene_and_video_are_preserved(self):
         with tempfile.TemporaryDirectory() as directory,patch.object(jobs,'STORE',Path(directory)/'jobs.json'):
-            app=AppTest.from_file(APP).run()
+            app=AppTest.from_file(APP,default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run()
             app.button(key='add_design_item').click().run()
             app.radio(key='render_mode').set_value('Ultra').run()

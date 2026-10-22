@@ -32,6 +32,11 @@ def validate_layout(length,width,height,openings):
 def plan_svg(layout,boxes=None):
     length=layout['length'];width=layout['width'];scale=min(680/length,520/width);x=80;y=80
     pieces=['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 760" role="img" aria-label="Room floor plan"><rect width="900" height="760" fill="white"/>',f'<rect x="{x}" y="{y}" width="{length*scale}" height="{width*scale}" fill="#f5f2eb" stroke="#243b53" stroke-width="5"/>']
+    from room_geometry import wall_box
+    for wall in layout.get('walls',[]):
+        points=wall_box(wall,layout['height']).vertices()[:4,:2]
+        coords=' '.join(f'{x+a*scale:g},{y+b*scale:g}' for a,b in points)
+        pieces.append(f'<polygon points="{coords}" fill="#8c9197"/>')
     for row in layout['openings']:
         offset=row['Offset (mm)']*scale;size=row['Width (mm)']*scale
         if row['Wall'] in ('Front','Back'):
@@ -70,6 +75,7 @@ def render_room_layout():
     length=a.number_input('Room length — x (mm)',min_value=500.0,value=3000.0,step=10.0,key='design_room_length')
     width=b.number_input('Room depth — y (mm)',min_value=500.0,value=3000.0,step=10.0,key='design_room_width')
     height=c.number_input('Room height (mm)',min_value=1000.0,value=2400.0,step=10.0,key='design_room_height')
+    wall_thickness=st.number_input('Room wall thickness (mm)',min_value=20.,max_value=500.,value=110.,step=1.,key='design_wall_thickness')
     defaults=st.session_state.get('_job_room_openings',[])
     openings=st.data_editor(pd.DataFrame(defaults,columns=OPENING_COLUMNS),num_rows='dynamic',hide_index=True,key='design_openings_editor',column_config={
         'Type':st.column_config.SelectboxColumn(options=['Door','Window'],required=True),
@@ -78,6 +84,9 @@ def render_room_layout():
     st.caption('Door sill normally 0. Window sill is its height above the floor. No openings are assumed; add all actual doors and windows.')
     try:
         layout=validate_layout(length,width,height,openings.to_dict(orient='records'))
+        layout['wall_thickness']=wall_thickness
+        from room_ui import render_wall_editor
+        layout['walls']=render_wall_editor(layout)
     except (ValueError,TypeError,KeyError) as error:
         st.error(str(error));return None
     signature=hashlib.sha256(json.dumps(layout,sort_keys=True).encode()).hexdigest()
@@ -96,7 +105,7 @@ def render_room_layout():
     st.caption('The room image above is a static measurement preview. Add and drag cabinets in Full design → Interactive 2D floor plan below.')
     return layout
 
-SCENE_COLUMNS=['Name','Type','Width (mm)','Height (mm)','Depth (mm)','X (mm)','Y (mm)','Z (mm)','Rotation (deg)','Shelves']
+SCENE_COLUMNS=['Name','Type','Width (mm)','Height (mm)','Depth (mm)','X (mm)','Y (mm)','Z (mm)','Rotation (deg)','Shelves','Design details']
 
 
 def scene_boxes(rows,layout,thickness,clearance,door_thickness,opened,floor=False):
@@ -118,12 +127,20 @@ def scene_boxes(rows,layout,thickness,clearance,door_thickness,opened,floor=Fals
                 local=[b for b in local if b.name not in ('Front top rail','Rear top rail')]
                 local.append(Box('Full top',(thickness,0,h-thickness),(w-2*thickness,d,thickness)))
         else:local=[Box(kind,(0,0,0),(w,d,h),'appliance' if kind=='Appliance' else 'panel')]
+        from materials import details
+        from room_geometry import worktop_rectangles
+        meta=details(row)
+        selected=meta.get('materials',{})
+        if kind=='Worktop':
+            local=[Box('Custom worktop',(a,b,0),(c-a,e-b,h),'panel') for a,b,c,e in worktop_rectangles(w,d,meta.get('worktop',{}))]
+        from dataclasses import replace
+        local=[replace(box,colour=selected.get('Worktop' if kind=='Worktop' else 'Front' if box.kind=='door' else 'Carcass',{}).get('color',box.colour),finish=selected.get('Worktop' if kind=='Worktop' else 'Front' if box.kind=='door' else 'Carcass',{}).get('finish')) for box in local]
         theta=math.radians(angle)
         placed=[]
         for box in local:
             a,b,c=box.origin
             origin=(x+a*math.cos(theta)-b*math.sin(theta),y+a*math.sin(theta)+b*math.cos(theta),z+c)
-            placed.append(Box(str(row['Name'])+' — '+box.name,origin,box.size,box.kind,box.angle+angle))
+            placed.append(Box(str(row['Name'])+' — '+box.name,origin,box.size,box.kind,box.angle+angle,box.colour,box.finish))
         # Check carcass footprints against room bounds; door reveals may project outward a few mm.
         closed=unit_geometry(kind,w,h,d,thickness,int(shelves),clearance,door_thickness,False) if kind in BASE_TYPES and kind not in TWO_D_TYPES else local
         footprints=[Box(b.name,(x+b.origin[0]*math.cos(theta)-b.origin[1]*math.sin(theta),y+b.origin[0]*math.sin(theta)+b.origin[1]*math.cos(theta),z+b.origin[2]),b.size,b.kind,b.angle+angle) for b in closed]
@@ -135,10 +152,16 @@ def scene_boxes(rows,layout,thickness,clearance,door_thickness,opened,floor=Fals
     return boxes
 
 
+def scene_frame(rows):
+    frame=pd.DataFrame(rows,columns=SCENE_COLUMNS)
+    frame['Design details']=frame['Design details'].fillna('')
+    return frame
+
+
 def current_scene_rows():
     if st.session_state.get('_design_lock'):return st.session_state['_design_lock']['rows']
     rows=st.session_state.get('_job_scene_rows',[])
-    current=pd.DataFrame(rows,columns=SCENE_COLUMNS)
+    current=scene_frame(rows)
     editor=st.session_state.get('design_scene_editor',{})
     for i,changes in editor.get('edited_rows',{}).items():
         for col,value in changes.items():current.loc[int(i),col]=value
@@ -168,6 +191,9 @@ def render_scene_editor(layout,width,height,depth):
             lock=st.session_state.pop('_design_lock')
             st.session_state['_job_scene_rows']=lock['rows']
             st.session_state['_job_room_openings']=lock['layout']['openings']
+            st.session_state['_job_walls']=lock['layout'].get('walls',[])
+            st.session_state['design_wall_thickness']=lock['layout'].get('wall_thickness',110.)
+            st.session_state.pop('design_walls_editor',None)
             for key,field in (('design_room_length','length'),('design_room_width','width'),('design_room_height','height')):
                 st.session_state[key]=lock['layout'][field]
             st.session_state['design_layout_signature']=hashlib.sha256(json.dumps(lock['layout'],sort_keys=True).encode()).hexdigest()
@@ -231,9 +257,18 @@ def render_scene_editor(layout,width,height,depth):
             row.update({'X (mm)':x,'Y (mm)':y})
             commit_scene(current+[row])
         except ValueError as error:st.error(str(error))
-    edited=st.data_editor(pd.DataFrame(st.session_state.get('_job_scene_rows',[]),columns=SCENE_COLUMNS),num_rows='dynamic',hide_index=True,key='design_scene_editor',disabled=locked,column_config={
+    if st.button('Add custom worktop',key='add_custom_worktop',disabled=locked):
+        try:
+            if len(current)>=30:raise ValueError('Use at most 30 design items.')
+            w=min(1800.,layout['length']);d=min(600.,layout['width']);z=height
+            x,y=next_position(current,w,d,layout,z,30)
+            row=dict(zip(SCENE_COLUMNS,[f'Worktop {len(current)+1}','Worktop',w,30.,d,x,y,z,0.,0,'']))
+            from designer_geometry import validate_unit
+            validate_unit(row,layout);commit_scene(current+[row])
+        except ValueError as error:st.error(str(error))
+    edited=st.data_editor(scene_frame(st.session_state.get('_job_scene_rows',[])),num_rows='dynamic',hide_index=True,key='design_scene_editor',disabled=locked,column_config={
        'Type':st.column_config.SelectboxColumn(options=list(ALL_TYPES),required=True),
-       **{c:st.column_config.NumberColumn(required=True) for c in SCENE_COLUMNS[2:]}})
+       **{c:st.column_config.NumberColumn(required=True) for c in SCENE_COLUMNS[2:10]},'Design details':None})
     rows=edited.to_dict(orient='records')
     st.caption(f'{len(rows)} units in the design. X runs left to right; Y runs front to back. Rotation is around each unit’s local corner. Adjacent units may touch; check working aisles and opening clearances.')
     from designer_ui import render_designer

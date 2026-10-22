@@ -12,7 +12,7 @@ async def main():
   await page.get_by_role('button',name='Add library unit',exact=True).click()
   await page.wait_for_timeout(600)
   await page.get_by_role('button',name='Add library unit',exact=True).click()
-  frame=next(f for f in page.frames if 'mkp_designer2d' in f.url)
+  frame=[f for f in page.frames if 'mkp_designer2d' in f.url][-1]
   await frame.wait_for_function('args && args.units.length===2')
   unit=frame.locator('polygon.unit').nth(0)
   await unit.scroll_into_view_if_needed();box=await unit.bounding_box()

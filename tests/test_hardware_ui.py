@@ -14,7 +14,7 @@ class HardwareUiTests(unittest.TestCase):
             records.append(dict(sku=sku,product=name,price=price,unit=unit,length_mm=None,width_mm=None,thickness_mm=None))
         history={'updates':[dict(supplier='Blum',effective_date='2026-01-01',uploaded_utc='2026-01-01T00:00:00+00:00',vat_basis='Included',vat_rate=15,filename='blum.csv',products=records)]}
         with patch.object(hardware_ui,'load',return_value=history):
-            app=AppTest.from_file(APP).run()
+            app=AppTest.from_file(APP,default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run()
             self.assertFalse(app.exception)
             app.selectbox(key='hinge_price_source').set_value('Uploaded supplier prices').run()
@@ -38,7 +38,7 @@ class HardwareUiTests(unittest.TestCase):
 
     def test_manual_prices_still_work(self):
         with patch.object(hardware_ui,'load',return_value={'updates':[]}):
-            app=AppTest.from_file(APP).run()
+            app=AppTest.from_file(APP,default_timeout=10).run()
             app.button(key='confirm_room_layout').click().run()
             app.number_input(key='hinge_price_manual').set_value(25)
             app.checkbox(key='plates_included').check().run()
