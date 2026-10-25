@@ -7,6 +7,7 @@ async def main():
   browser=await p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
   page=await browser.new_page(viewport={'width':1440,'height':1100})
   await page.goto(os.environ.get('MKP_TEST_URL','http://127.0.0.1:8515'),wait_until='networkidle')
+  await page.get_by_text('Business libraries and workshop settings',exact=True).click()
   await page.get_by_text('Materials and fixtures library',exact=True).click()
   await page.get_by_role('button',name='Add illustrative starter products',exact=True).click()
   await page.get_by_role('button',name='Confirm room layout',exact=True).click()

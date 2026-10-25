@@ -36,6 +36,7 @@ def render_add_room_feature(layout):
             walls=editor_rows(st.session_state.get('_job_walls',[]),WALL_COLUMNS+['Locked'],st.session_state.get('design_walls_editor',{}))
             openings,walls=add_feature(layout,current,walls,kind,values,st.session_state.get('_design_lock'))
             st.session_state['_job_room_openings']=openings;st.session_state['_job_walls']=walls
+            if kind=='Wall':st.session_state['wall_editor_open']=True
             st.session_state.pop('design_openings_editor',None);st.session_state.pop('design_walls_editor',None)
             st.session_state.pop('design_layout_signature',None)
             st.session_state['_room_feature_message']=kind+' added. Review the plan and confirm the room layout.'

@@ -36,7 +36,7 @@ def add_feature(layout,openings,walls,kind,values,lock=None):
 def edit_wall(layout,walls,index,start=None,end=None,delta=None,lock=None):
     require_unlocked(lock)
     if isinstance(index,bool) or not isinstance(index,int) or not 0<=index<len(walls):raise ValueError('Select a current wall.')
-    if walls[index].get('Locked',True):raise ValueError('This wall is locked. Untick Locked in the wall table before moving it.')
+    if walls[index].get('Locked',True):raise ValueError('This wall is locked. Use Unlock selected wall before dragging it.')
     result=deepcopy(walls);wall=result[index]
     if delta is not None:
         dx,dy=map(float,delta)
@@ -44,5 +44,19 @@ def edit_wall(layout,walls,index,start=None,end=None,delta=None,lock=None):
     for point,keys in ((start,('Start X (mm)','Start Y (mm)')),(end,('End X (mm)','End Y (mm)'))):
         if point is not None:
             for key,value in zip(keys,point):wall[key]=round(float(value),3)
+    validate_walls(result,layout)
+    return result
+
+
+def correct_wall(layout,walls,index,x,y,length,angle,thickness=None,name=None,lock=None):
+    """An explicit measured correction, followed by re-locking the corrected wall."""
+    require_unlocked(lock)
+    if isinstance(index,bool) or not isinstance(index,int) or not 0<=index<len(walls):raise ValueError('Select a current wall.')
+    x,y,length,angle=map(float,(x,y,length,angle))
+    if not all(math.isfinite(v) for v in (x,y,length,angle)) or length<50:raise ValueError('Use finite measurements and a wall length of at least 50 mm.')
+    result=deepcopy(walls);wall=result[index];r=math.radians(angle)
+    wall.update({'Start X (mm)':x,'Start Y (mm)':y,'End X (mm)':round(x+length*math.cos(r),3),'End Y (mm)':round(y+length*math.sin(r),3),'Locked':True})
+    if thickness is not None:wall['Thickness (mm)']=float(thickness)
+    if name is not None:wall['Name']=name
     validate_walls(result,layout)
     return result

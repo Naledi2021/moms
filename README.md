@@ -65,21 +65,21 @@ A wall uses a start point, length, direction and thickness. Windows/doors use an
 outer wall, offset, opening length and height; windows also have a sill height.
 Every addition is validated and requires room confirmation again.
 
-Walls are **locked by default**, including legacy walls with no lock field. In the
-wall table, untick **Locked** to enable the exact-coordinate controls and canvas
-movement. Use **Move unlocked walls** to drag the segment, or an orange endpoint
-to reshape it. Re-tick Locked when finished. Approved designs block all changes.
-Coordinates are read-only in the table; use the unlocked detail form for changes.
- Expand
-**Draw walls and edit wall measurements**, click two points to draw a partition or
-return (10 mm click grid), and refine its endpoints/thickness in the wall table.
-Deleting a row removes a wall. Changing walls invalidates room confirmation. The
-outer room remains a rectangle; drawn segments do not define an arbitrary enclosed
-polygon. Doors/windows still belong to the four named outer walls. Partitions have
-room height and support angled centre lines; their geometry triggers cabinet and
-worktop collision warnings. Outer walls are modelled outside the clear room, with
-real door/window openings. **Show room walls in preview** adds translucent walls
-to 3D/Ultra and wall geometry to sketch/video. Wall drawing is disabled while locked.
+Walls are **locked by default**, including legacy walls with no lock field. The
+wall editor opens by default with controls beside the plan on desktop. Click a wall in the plan (gold highlight) or choose
+**Wall to edit**. **Correct wall position** accepts start X/Y, length and direction;
+**Apply position and lock wall** deliberately corrects even a drag-locked wall and
+re-locks it. This does not bypass approved-design locking. **Undo last wall change**
+restores the preceding wall collection only when it still matches the latest
+change, validates it against the current room and requires room confirmation again.
+Use **Unlock selected wall** for dragging the segment or orange endpoints, then
+re-lock. Advanced endpoint/thickness/deletion controls remain available in a nested
+expander. New or changed walls still require confirmation; no saved revision is
+modified in place. Outer walls remain controlled by room length/depth, not dragging.
+
+The studio uses a coordinated navy/gold/light-grey theme, compact workflow guide
+and grouped **Business libraries and workshop settings** panel. Theme/CSS changes
+do not change design measurements, pricing or stored job formats.
 
 Open **Material library — boards, fronts and worktops** to add or edit materials:
 name, category, thickness, colour, Matte/Gloss/Wood grain finish, supplier/range and

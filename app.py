@@ -19,6 +19,8 @@ from calculator import Part, cabinet_parts, estimate, single_door, edged_cut_siz
 
 LOGO=Path(__file__).with_name('assets')/'mkp-logo.png'
 st.set_page_config(page_title='MKP | Kitchen Design Studio', page_icon=str(LOGO), layout='wide')
+from studio_style import apply_studio_style,studio_workflow
+apply_studio_style()
 from app_access import require_access
 require_access()
 st.logo(str(LOGO),size='large')
@@ -60,16 +62,20 @@ def supplier_price(label, key):
 brand_icon,brand_title=st.columns([1,7])
 with brand_icon:st.image(str(LOGO),width=120)
 with brand_title:
-    st.title('Moms Kitchens and Projects')
+    st.markdown('<div class="studio-eyebrow">MOMS KITCHENS AND PROJECTS</div>',unsafe_allow_html=True)
+    st.title('Kitchen Design Studio')
     st.caption('Design • Renovate • Build | Kitchen design, costing and cutting lists')
+studio_workflow()
 render_saved_jobs()
 from workshop_defaults_ui import render_workshop_defaults,render_save_workshop
-render_workshop_defaults()
-render_supplier_uploads()
 from materials_ui import render_material_library
-render_material_library()
 from default_prices_ui import render_shared_defaults,save_current_defaults
-render_shared_defaults()
+with st.expander('Business libraries and workshop settings'):
+    st.caption('Reusable materials, supplier prices and construction standards for all jobs.')
+    render_material_library()
+    render_workshop_defaults()
+    render_supplier_uploads()
+    render_shared_defaults()
 render_plan_import()
 room_layout=render_room_layout()
 if room_layout is None:
