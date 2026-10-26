@@ -99,3 +99,12 @@ def reviewed_room(layout,length,depth,height,openings,walls,lock=None):
     validate_walls(walls,result)
     result['walls']=deepcopy(walls)
     return result
+
+
+def plan_reference_image(pages):
+    """Keep a bounded reference thumbnail in job snapshots, independently of uploads."""
+    if not pages:return None
+    image=Image.open(BytesIO(pages[0])).convert('RGB');image.thumbnail((1000,1000))
+    output=BytesIO();image.save(output,format='JPEG',quality=80)
+    if len(output.getvalue())>1_000_000:raise ValueError('Plan reference image is too large.')
+    return base64.b64encode(output.getvalue()).decode('ascii')

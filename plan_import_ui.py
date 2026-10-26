@@ -7,6 +7,9 @@ from plan_import import document_pages,local_ocr,vision_read,measurement_candida
 
 
 def render_plan_import():
+    if st.session_state.get('_room_lock'):
+        st.caption('Room structure is frozen. Unlock room structure below before replacing its plan or measurements.')
+        return
     if st.session_state.get('_design_lock'):
         st.caption('Plan imports cannot modify an approved layout. Unlock it to import measurements.')
         return
@@ -14,12 +17,17 @@ def render_plan_import():
         st.write('Upload a photo of a sketch or a PDF plan. Review the extracted text and measurements before using them in the room layout.')
         file=st.file_uploader('Sketch or plan document',type=['png','jpg','jpeg','pdf'],key='plan_document_upload')
         method=st.selectbox('Reading method',['PDF text / local OCR','AI handwriting reading'],key='plan_reading_method')
+        auto_local=st.checkbox('Read new uploads automatically using local OCR',value=True,key='plan_auto_local')
         if method=='AI handwriting reading' and not os.environ.get('KITCHEN_VISION_API_KEY'):
             st.info('AI handwriting reading needs a configured AI service. Local OCR remains available but can struggle with handwriting.')
-        st.caption('Local reading stays on this server. AI reading sends document images to the configured AI service only when you click Read document. PDFs: up to 5 pages; uploads: up to 15 MB. No dimensions are inferred from drawing scale.')
+        st.caption('New local uploads can be read automatically once. Local reading stays on this server. AI reading sends document images to the configured AI service only when you click Read document. PDFs: up to 5 pages; uploads: up to 15 MB. No dimensions are inferred from drawing scale.')
         if file:
+            st.info('Upload → review measurements → use and freeze room. The source becomes part of your design after review; uploading alone does not change its dimensions.')
             digest=hashlib.sha256(file.getvalue()).hexdigest()
-            if st.button('Read document',key='read_plan_document'):
+            requested=st.button('Read document',key='read_plan_document')
+            automatic=auto_local and method=='PDF text / local OCR' and st.session_state.get('_plan_local_attempt')!=digest
+            if requested or automatic:
+                if method=='PDF text / local OCR':st.session_state['_plan_local_attempt']=digest
                 try:
                     with st.spinner('Reading document annotations…'):
                         embedded,pages=document_pages(file.getvalue(),file.name)
@@ -27,7 +35,8 @@ def render_plan_import():
                         else:
                             text=embedded if embedded.strip() else local_ocr(pages)
                             result={'text':text,'uncertainties':['Local OCR may misread handwriting or miss annotations. Confirm all dimensions against the original.']}
-                    st.session_state['_plan_draft']={'filename':file.name,'digest':digest,**result}
+                    from plan_import import plan_reference_image
+                    st.session_state['_plan_draft']={'filename':file.name,'digest':digest,'reference_image_base64':plan_reference_image(pages),**result}
                     st.session_state['plan_review_text']=result['text']
                     st.session_state['_plan_page_previews']=pages
                 except Exception as error:st.error(f'Could not read document: {error}')
@@ -58,7 +67,7 @@ def render_plan_import():
                             multiplier={'mm':1,'cm':10,'m':1000}[unit];values=[v*multiplier for v in candidate['values']]
                             if not all(math.isfinite(v) and v>0 for v in values) or (purpose=='Room dimensions' and (min(values[:2])<500 or (needed==3 and values[2]<1000))):
                                 st.error('Check units: room dimensions must be at least 500 mm horizontally and 1000 mm high.');return
-                            st.session_state['_job_plan_import']={'filename':draft['filename'],'text':text,'reviewed_annotation':candidate['annotation'],'confirmed_unit':unit,'dimension_order':order,'purpose':purpose}
+                            st.session_state['_job_plan_import']={'filename':draft['filename'],'text':text,'reviewed_annotation':candidate['annotation'],'confirmed_unit':unit,'dimension_order':order,'purpose':purpose,'reference_image_base64':draft.get('reference_image_base64')}
                             if purpose=='Room dimensions':
                                 st.session_state['design_room_length']=values[0];st.session_state['design_room_width']=values[1]
                                 if needed==3:st.session_state['design_room_height']=values[2]

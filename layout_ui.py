@@ -70,6 +70,28 @@ def render_room_layout():
         st.info('Approved room and openings are locked. Unlock the design in the placement section to edit them.')
         st.image(plan_svg(lock['layout']),width='stretch')
         return lock['layout']
+    room_lock=st.session_state.get('_room_lock')
+    if room_lock:
+        from room_lock import check_room_lock
+        check_room_lock(room_lock,room_lock['layout'])
+        frozen=room_lock['layout']
+        st.success('Room structure frozen — walls, doors and windows stay fixed while you place cabinets.')
+        st.image(plan_svg(frozen),width='stretch')
+        confirmed=st.checkbox('I intend to change the frozen room structure',key='room_structure_unlock_confirmed')
+        if st.button('Unlock room structure',disabled=not confirmed,key='unlock_room_structure'):
+            from copy import deepcopy
+            room=deepcopy(frozen)
+            st.session_state.pop('_room_lock',None)
+            st.session_state['_job_layout']=room
+            st.session_state['_job_walls']=room.get('walls',[])
+            st.session_state['_job_room_openings']=room['openings']
+            for key,field in (('design_room_length','length'),('design_room_width','width'),('design_room_height','height')):st.session_state[key]=room[field]
+            st.session_state['design_wall_thickness']=room.get('wall_thickness',110.)
+            for key in ('design_walls_editor','design_openings_editor','room_structure_unlock_confirmed'):st.session_state.pop(key,None)
+            st.session_state['design_layout_signature']=hashlib.sha256(json.dumps(room,sort_keys=True).encode()).hexdigest()
+            st.rerun()
+        st.session_state['_job_layout']=frozen
+        return frozen
     st.caption('Enter measured rectangular room dimensions and openings. Confirm this plan before placing units. Irregular room outlines and service points are not supported yet.')
     a,b,c=st.columns(3)
     length=a.number_input('Room length — x (mm)',min_value=500.0,value=3000.0,step=10.0,key='design_room_length')
@@ -104,6 +126,11 @@ def render_room_layout():
     if not confirmed:return None
     st.session_state['_job_layout']=layout
     st.success('Room layout confirmed. Unit placement is unlocked.')
+    if st.button('Freeze room structure',key='freeze_room_structure',type='primary'):
+        from room_lock import freeze_room
+        st.session_state['_room_lock']=freeze_room(layout)
+        st.rerun()
+    st.caption('Freeze protects room dimensions, walls, doors and windows while cabinet placement stays editable. Save the job revision to retain it beyond this session.')
     st.caption('The room image above is a static measurement preview. Add and drag cabinets in Full design → Interactive 2D floor plan below.')
     return layout
 

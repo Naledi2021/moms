@@ -31,6 +31,8 @@ def save_job(name, state, snapshot, pdf, cutting_csv, job_id=None, path=None):
     if not pdf.startswith(b'%PDF'): raise ValueError('A generated PDF quotation is required.')
     # Reject unsupported/non-finite values before touching persistent state.
     json.dumps({'state':state,'snapshot':snapshot},allow_nan=False)
+    from room_lock import check_room_lock
+    check_room_lock(snapshot.get('room_lock'),snapshot.get('layout'))
     lock=snapshot.get('design_lock')
     if lock:
         from designer_geometry import fingerprint
@@ -55,13 +57,14 @@ def save_job(name, state, snapshot, pdf, cutting_csv, job_id=None, path=None):
 
 def restore_revision(state, job_id, revision):
     for key in list(state):
-        if key.startswith(('plan_room_','plan_opening_','plan_geometry_verified_')) or key in ('_plan_layout_digest','_plan_layout_openings','plan_layout_editor','_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
+        if key.startswith(('plan_room_','plan_opening_','plan_geometry_verified_')) or key in ('_plan_local_attempt','_room_lock','room_structure_unlock_confirmed','_plan_layout_digest','_plan_layout_openings','plan_layout_editor','_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
             del state[key]
     for key,value in revision['state'].items():
         if is_job_key(key): state[key]=value
     state['_job_workshop_defaults']=revision['snapshot'].get('workshop_defaults') or {'settings':{}}
     state['_job_default_prices']=revision['snapshot'].get('default_prices') or {'version':1,'updated_utc':None,'prices':{}}
     state['_design_lock']=revision['snapshot'].get('design_lock')
+    state['_room_lock']=revision['snapshot'].get('room_lock')
     state['_active_job_id']=job_id
     state['_active_revision']=revision['number']
     state['_job_supplier_snapshot']=revision['snapshot']['supplier_products']
@@ -75,7 +78,7 @@ def restore_revision(state, job_id, revision):
 
 def clear_job(state):
     for key in list(state):
-        if key.startswith(('plan_room_','plan_opening_','plan_geometry_verified_')) or key in ('_plan_layout_digest','_plan_layout_openings','plan_layout_editor','_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
+        if key.startswith(('plan_room_','plan_opening_','plan_geometry_verified_')) or key in ('_plan_local_attempt','_room_lock','room_structure_unlock_confirmed','_plan_layout_digest','_plan_layout_openings','plan_layout_editor','_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
             del state[key]
 
 
@@ -98,6 +101,8 @@ def import_job_history(raw,path=None):
         if not pdf.startswith(b'%PDF'):raise ValueError('Job archive contains an invalid quotation PDF.')
         snapshot=revision['snapshot']
         if not all(key in snapshot for key in ('supplier_products','manual_accessories','pricing_status','total')):raise ValueError('Job snapshot is incomplete.')
+        from room_lock import check_room_lock
+        check_room_lock(snapshot.get('room_lock'),snapshot.get('layout'))
         lock=snapshot.get('design_lock')
         if lock:
             from designer_geometry import fingerprint

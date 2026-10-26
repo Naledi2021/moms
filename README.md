@@ -326,3 +326,34 @@ smaller screens use a compact library or stacked arrangement. Detailed preset
 editing remains under **Base unit library**; the table is under **Placement table —
 advanced measurements**. The same saved rows, component events and approval locks
 are used; this is an incremental workspace change, not a new CAD engine.
+
+## Active plan reference and frozen room structure
+
+Local uploads are read automatically once by default; **Read new uploads
+automatically using local OCR** can be turned off. Manual **Read document** remains
+available for retries. AI reading always requires an explicit click and never runs
+as an automatic upload action. Reading alone does not alter room geometry.
+
+After reviewing the source and completing the measured room/opening fields, choose
+**Use reviewed plan and freeze room** to activate the measured room immediately and
+freeze its structure. Alternatively create/confirm a room normally, then select
+**Freeze room structure**. Room length/depth/height, partitions, doors and windows
+remain fixed while cabinet add/move/rotate/delete stays available. Room freezing
+is separate from full layout approval. **Unlock room structure** requires an
+explicit intention checkbox; full approved layouts must be unlocked first.
+
+**Active plan reference** remains visible above the room and in the designer even
+when the upload widget is removed. It contains reviewed text and a bounded JPEG
+thumbnail of the first source page (maximum 1000 × 1000 pixels and 1 MB), not the
+original multi-page upload or a geometrically aligned tracing layer. A room JSON
+with the source reference can be downloaded after confirmation. Existing job
+revisions also save the source and frozen geometry; save a job revision to retain
+these beyond the session. Free hosting still uses local ephemeral storage, so
+retain downloaded backups.
+
+Saving or restoring an archive with frozen room geometry checks its fingerprint
+against the actual room. Changed walls/openings require deliberate unlocking and
+fresh confirmation. A legacy job without a room freeze remains editable; no
+existing revision is migrated or modified. Missing or uncertain dimensions still
+need human review: image/OCR order is not used to invent wall associations, room
+height or window sill levels.

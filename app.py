@@ -76,6 +76,8 @@ with st.expander('Business libraries and workshop settings'):
     render_workshop_defaults()
     render_supplier_uploads()
     render_shared_defaults()
+from plan_reference_ui import render_active_plan
+render_active_plan()
 render_plan_import()
 room_layout=render_room_layout()
 if room_layout is None:
@@ -317,6 +319,7 @@ snapshot = dict(
     workshop_defaults=st.session_state.get('_job_workshop_defaults'),
     default_prices=st.session_state.get('_job_default_prices'),
     design_lock=st.session_state.get('_design_lock'),
+    room_lock=st.session_state.get('_room_lock'),
     design_views=design_views,
     cutting_list=frame.to_dict(orient='records'),
 )

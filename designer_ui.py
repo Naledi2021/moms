@@ -10,6 +10,8 @@ _canvas=components.declare_component('mkp_designer2d',path=str(Path(__file__).wi
 
 def render_designer(layout,rows):
     st.subheader('Interactive 2D floor plan')
+    from plan_reference_ui import render_active_plan
+    render_active_plan('designer')
     lock=st.session_state.get('_design_lock')
     if lock:layout=lock['layout'];rows=lock['rows']
     if layout.get('walls'):st.caption('To move walls, open Prepare the room layout → Draw walls and edit wall measurements, then unlock the wall.')

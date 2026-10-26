@@ -11,6 +11,8 @@ COLUMNS=['Type','Wall','Offset (mm)','Width (mm)','Height (mm)','Sill (mm)']
 
 
 def render_plan_layout(draft,text):
+    if st.session_state.get('_room_lock') or st.session_state.get('_design_lock'):
+        st.info('Unlock room structure and layout approval before importing room changes.');return
     st.subheader('Build an editable room from this plan')
     st.caption('Text reading alone does not place geometry. Assign annotations to the room and openings below. Drawing position, door height and window sill cannot be determined reliably from OCR text; confirm them from the plan or site measurements. X starts at the left; Y starts at the front/top of the plan.')
     if st.session_state.get('_plan_layout_digest')!=draft['digest']:
@@ -57,7 +59,9 @@ def render_plan_layout(draft,text):
     context=json.dumps(stable([draft['digest'],text,length,depth,height,openings,replace]),sort_keys=True,default=str)
     token=hashlib.sha256(context.encode()).hexdigest()[:16]
     verified=st.checkbox('I checked the room dimensions, opening positions, heights and sill levels against the original',key='plan_geometry_verified_'+token)
-    if st.button('Create editable room from reviewed plan',key='plan_create_room',type='primary',disabled=not verified):
+    apply=st.button('Create editable room from reviewed plan',key='plan_create_room',disabled=not verified)
+    freeze=st.button('Use reviewed plan and freeze room',key='plan_create_frozen_room',type='primary',disabled=not verified)
+    if apply or freeze:
         try:
             if any(v is None for v in (length,depth,height)):raise ValueError('Enter room length, depth and measured ceiling height.')
             from layout_ui import OPENING_COLUMNS
@@ -66,9 +70,15 @@ def render_plan_layout(draft,text):
             merged=openings if replace else old+[o for o in openings if o not in old]
             room=reviewed_room({'wall_thickness':st.session_state.get('design_wall_thickness',110)},length,depth,height,merged,walls,st.session_state.get('_design_lock'))
             st.session_state.update(design_room_length=float(length),design_room_width=float(depth),design_room_height=float(height),_job_room_openings=room['openings'],_job_walls=room['walls'])
-            st.session_state['_job_plan_import']={'filename':draft['filename'],'text':text,'purpose':'Reviewed room layout','confirmed_unit':'mm','reviewed_layout':room}
+            st.session_state['_job_plan_import']={'filename':draft['filename'],'text':text,'purpose':'Reviewed room layout','confirmed_unit':'mm','reviewed_layout':room,'reference_image_base64':draft.get('reference_image_base64')}
             for key in ('design_openings_editor','design_walls_editor','design_layout_signature'):st.session_state.pop(key,None)
-            st.success('Editable room created below, including reviewed doors and windows. Confirm room layout to start placing cabinets. Existing cabinets retain their positions; review warnings if the room changed.')
+            if freeze:
+                from room_lock import freeze_room
+                st.session_state['_room_lock']=freeze_room(room)
+                st.session_state['_job_layout']=room
+                st.session_state['design_layout_signature']=hashlib.sha256(json.dumps(room,sort_keys=True).encode()).hexdigest()
+                st.success('Reviewed plan is now the active frozen room. Place cabinets below; walls and windows stay fixed.')
+            if not freeze:st.success('Editable room created below, including reviewed doors and windows. Confirm room layout to start placing cabinets. Existing cabinets retain their positions; review warnings if the room changed.')
             from layout_ui import plan_svg
             st.image(plan_svg(room),width='stretch')
         except (ValueError,KeyError,TypeError) as error:st.error(str(error))
