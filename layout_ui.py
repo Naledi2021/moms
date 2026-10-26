@@ -210,7 +210,9 @@ def render_scene_editor(layout,width,height,depth):
             st.session_state.pop('design_scene_editor',None)
             st.rerun()
         except ValueError as error:st.error(str(error))
-    with st.expander('Base unit library',expanded=True):
+    from designer_ui import render_designer
+    current=render_designer(layout,current)
+    with st.expander('Base unit library',expanded=False):
         category=st.selectbox('Cabinet category',['Base','Wall','Corner','Tall'],key='library_category',disabled=locked)
         choices=[kind for kind,spec in LIBRARY.items() if spec['category']==category]
         selected=st.selectbox('Library unit',choices,key='library_selection',disabled=locked)
@@ -270,13 +272,12 @@ def render_scene_editor(layout,width,height,depth):
             from designer_geometry import validate_unit
             validate_unit(row,layout);commit_scene(current+[row])
         except ValueError as error:st.error(str(error))
-    edited=st.data_editor(scene_frame(st.session_state.get('_job_scene_rows',[])),num_rows='dynamic',hide_index=True,key='design_scene_editor',disabled=locked,column_config={
+    with st.expander('Placement table — advanced measurements'):
+        edited=st.data_editor(scene_frame(st.session_state.get('_job_scene_rows',[])),num_rows='dynamic',hide_index=True,key='design_scene_editor',disabled=locked,column_config={
        'Type':st.column_config.SelectboxColumn(options=list(ALL_TYPES),required=True),
        **{c:st.column_config.NumberColumn(required=True) for c in SCENE_COLUMNS[2:10]},'Design details':None})
     rows=edited.to_dict(orient='records')
     st.caption(f'{len(rows)} units in the design. X runs left to right; Y runs front to back. Rotation is around each unit’s local corner. Adjacent units may touch; check working aisles and opening clearances.')
-    from designer_ui import render_designer
-    rows=render_designer(layout,rows)
     from design_assistant import render_assistant
     render_assistant(layout,rows)
     return rows

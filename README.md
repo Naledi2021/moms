@@ -293,3 +293,36 @@ Generate silent 3–12 second turntable MP4 videos of the entire selected scene 
 Upload PNG/JPG sketches or PDFs up to 15 MB and 5 pages before room confirmation. Local reading uses embedded PDF text or Tesseract OCR on images/scanned pages; Poppler tools render PDF pages. Review and correct the transcript. Extracted dimension groups preserve their labels/context and units. Explicitly confirm the annotation, units and dimension order before applying room dimensions or staging a design item. Staged items can only be placed after confirming the room layout. Dimensions are never inferred from pixel scale. Handwriting is unreliable with local OCR.
 
 Optional AI handwriting reading sends page images to OpenAI only on an explicit Read document action. It uses a secure KITCHEN_VISION_API_KEY binding for api.openai.com; a requirement was saved to the environment draft. It is not configured or validated yet. Add the credential securely in environment settings, review/save and publish the changes, then test an actual handwritten plan. Never place keys in project files. Reviewed text and source filename are retained in saved jobs; raw uploads remain in session memory.
+
+## Reviewed plan-to-room import and drawing workspace
+
+After **Read document**, use **Build an editable room from this plan**. Individual
+annotations such as `4000 mm`, `3000 mm`, `4 m` or `300 cm` are now available as
+sources, in addition to the original grouped cabinet-dimension importer under
+**Import individual cabinet or dimension groups (advanced)**. Assign length/depth
+(or enter them manually), supply measured ceiling height, and stage each door or
+window with its wall, width, offset, height and sill. Review the openings table and
+check the verification box, then **Create editable room from reviewed plan**.
+Confirm the resulting room below to enable cabinet placement.
+
+This converts reviewed dimensions into real editable geometry, rather than merely
+showing the OCR transcript. It does not infer drawing scale, spatial relationships,
+missing heights or sill levels from OCR order. Front is the top of the plan; offsets
+start at x=0 on Front/Back and y=0 on Left/Right. No automatic AI floor-plan tracing
+is claimed. Cabinet imports still require explicit width/height/depth meaning.
+
+Existing openings are merged without exact duplicates unless replacement is
+explicitly selected. Existing cabinets and partitions stay in place; imports that
+would put existing partitions outside the new room are rejected before state is
+changed. Reviewed source text and layout are retained in the job's existing import
+snapshot. Approved layouts reject imports. Altered measurements/openings require
+fresh verification and room confirmation; invalid drafts leave the current design
+unchanged. Source numbers do not imply manufacturer or fabrication accuracy.
+
+The interactive designer now appears before detailed setup and placement tables.
+Its cabinet library sits to the left of a larger drawing area, with selected-unit
+measurements and dimension lines. Desktop widths retain side-by-side panels;
+smaller screens use a compact library or stacked arrangement. Detailed preset
+editing remains under **Base unit library**; the table is under **Placement table —
+advanced measurements**. The same saved rows, component events and approval locks
+are used; this is an incremental workspace change, not a new CAD engine.

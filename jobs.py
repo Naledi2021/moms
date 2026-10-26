@@ -55,7 +55,7 @@ def save_job(name, state, snapshot, pdf, cutting_csv, job_id=None, path=None):
 
 def restore_revision(state, job_id, revision):
     for key in list(state):
-        if key in ('_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
+        if key.startswith(('plan_room_','plan_opening_','plan_geometry_verified_')) or key in ('_plan_layout_digest','_plan_layout_openings','plan_layout_editor','_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
             del state[key]
     for key,value in revision['state'].items():
         if is_job_key(key): state[key]=value
@@ -75,7 +75,7 @@ def restore_revision(state, job_id, revision):
 
 def clear_job(state):
     for key in list(state):
-        if key in ('_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
+        if key.startswith(('plan_room_','plan_opening_','plan_geometry_verified_')) or key in ('_plan_layout_digest','_plan_layout_openings','plan_layout_editor','_wall_undo','_wall_notice','_wall_pick_pending','wall_detail_pick') or key.startswith('room_feature_') or key=='_room_feature_message' or is_job_key(key) or key in ('blum_accessories','_job_manual_accessories','_job_supplier_snapshot','_active_job_id','_active_revision','_job_scene_rows','_job_layout','_job_room_openings','design_scene_editor','design_openings_editor','design_walls_editor','_job_plan_import','_job_import_units','_assistant_proposal','assistant_prompt','_design_lock','_designer_selected','_designer_event','_designer_feedback','unlock_confirmed','_job_default_prices','_job_walls','_wall_event','_job_workshop_defaults') or key.startswith('_default_profile_'):
             del state[key]
 
 

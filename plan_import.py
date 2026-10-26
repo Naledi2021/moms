@@ -70,3 +70,32 @@ def vision_read(pages):
     result=json.loads(response.json()['choices'][0]['message']['content'])
     if not isinstance(result.get('text'),str) or not isinstance(result.get('uncertainties'),list):raise ValueError('AI returned an invalid document transcription.')
     return result
+
+
+def single_measurements(text):
+    """Return explicit scalar annotations, without guessing spatial relationships."""
+    result=[]
+    for match in re.finditer(r'(?<![\w.])(\d+(?:\.\d+)?)\s*(mm|cm|m)\b',text,re.I):
+        value=float(match.group(1))*{'mm':1,'cm':10,'m':1000}[match.group(2).lower()]
+        if value>0 and value<100000:
+            result.append({'annotation':match.group(0),'mm':value,'context':text[max(0,match.start()-30):min(len(text),match.end()+35)].replace('\n',' ')})
+    return result[:100]
+
+
+def reviewed_room(layout,length,depth,height,openings,walls,lock=None):
+    """Validate the entire reviewed import before changing any application state."""
+    from designer_geometry import require_unlocked
+    from layout_ui import validate_layout
+    from room_geometry import validate_walls
+    require_unlocked(lock)
+    if length<500 or depth<500 or height<1000:raise ValueError('Room dimensions must be at least 500 mm horizontally and 1000 mm high.')
+    from copy import deepcopy
+    openings=deepcopy(openings)
+    for row in openings:
+        for key in ('Offset (mm)','Width (mm)','Height (mm)','Sill (mm)'):row[key]=float(row[key])
+        if row['Type']=='Door' and row['Sill (mm)']!=0:raise ValueError('Door sill must be 0 mm.')
+    result=validate_layout(length,depth,height,openings)
+    result['wall_thickness']=layout.get('wall_thickness',110)
+    validate_walls(walls,result)
+    result['walls']=deepcopy(walls)
+    return result

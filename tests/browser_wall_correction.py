@@ -1,7 +1,8 @@
 """Select a locked wall on the plan, correct its position, undo and inspect desktop styling."""
+from browser_helpers import wait_canvas
 import asyncio
 import os
-from playwright.async_api import async_playwright, Error as PlaywrightError
+from playwright.async_api import async_playwright
 
 async def main():
  async with async_playwright() as p:
@@ -23,25 +24,14 @@ async def main():
   box=await iframe.bounding_box()
   await page.mouse.click(box['x']+point['x'],box['y']+point['y'])
   print('Wall clicked',flush=True)
-  for _ in range(60):
-   try:
-    frame=await (await iframe.element_handle()).content_frame()
-    await frame.wait_for_function('args.selected===1',timeout=500);break
-   except PlaywrightError:pass
-  else:raise AssertionError('Wall selection did not update')
+  frame=await wait_canvas(iframe,'args.selected===1')
   await page.get_by_label('Position Y (mm)',exact=True).wait_for()
   await page.wait_for_function('document.querySelectorAll("input").length>0')
   await page.get_by_label('Position Y (mm)',exact=True).fill('1800')
   await page.get_by_role('button',name='Apply position and lock wall',exact=True).click()
   print('Correction submitted',flush=True)
   async def current_frame(expected_y):
-   for _ in range(60):
-    try:
-     f=await (await iframe.element_handle()).content_frame()
-     await f.wait_for_function('(y)=>args?.layout.walls.length===2 && args.layout.walls[1]["Start Y (mm)"]===y',arg=expected_y,timeout=500)
-     return f
-    except PlaywrightError:pass
-   raise AssertionError('Corrected wall did not reach the plan')
+   return await wait_canvas(iframe,'args?.layout.walls.length===2 && args.layout.walls[1]["Start Y (mm)"]==='+str(expected_y))
   frame=await current_frame(1800)
   assert await frame.evaluate('args.layout.walls[0]["Start Y (mm)"]===500 && args.layout.walls[1].Locked===true')
   await page.get_by_role('button',name='Undo last wall change',exact=True).click()
